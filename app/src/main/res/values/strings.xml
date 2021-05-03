@@ -1,6 +1,17 @@
 <resources>
-    <string name="app_name">Map Area Calculator</string>
-    <string name="title_activity_maps">Map Area Calculator</string>
+    <string name="app_name">Area Calculator</string>
+    <string name="title_activity_maps">Area Calculator</string>
     <string name="nav_open">Open</string>
     <string name="nav_close">Close</string>
+
+    <string name="testAppId">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="AppId">ca-app-pub-6992515405283697~4335888493</string>
+
+    <string name="testAdUnitId">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="adUnitId">ca-app-pub-6992515405283697/8592001735</string>
+    <string name="interstitialAdUnitId">ca-app-pub-6992515405283697/9138812551</string>
+    <string name="rewardedInterstitialAdUnitId">ca-app-pub-6992515405283697/4140447379</string>
+    <string name="todo">TODO</string>
+
+
 </resources>

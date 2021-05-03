@@ -34,6 +34,7 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -50,6 +51,20 @@ import android.widget.Toast;
 
 import com.daimajia.androidanimations.library.Techniques;
 import com.daimajia.androidanimations.library.YoYo;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.FullScreenContentCallback;
+import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.OnUserEarnedRewardListener;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
+import com.google.android.gms.ads.rewarded.RewardItem;
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -89,7 +104,7 @@ import java.util.List;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,GoogleMap.OnMarkerDragListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
 
@@ -107,14 +122,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     boolean isOtherOptionsVisible=false;
     boolean needMic=true;
 
-    List<LatLng> markersList=new ArrayList<>();
+    List<LatLng> latLngList=new ArrayList<>();
 
     Polygon polygon;
     Polyline polyline;
 
     private LinearLayout zoomLayout,calculatorLayout,linksLayout;
-
-
+    AdView adView1,adView2;
+    private InterstitialAd mInterstitialAd;
+    private RewardedInterstitialAd rewardedInterstitialAd;
+    private String TAG="MapsActivity";
 
     private static final int SPEECH_REQUEST=10;
     private Animation animation_open,animation_close;
@@ -125,6 +142,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+        adView1 = findViewById(R.id.adView1);
+        adView2 = findViewById(R.id.adView2);
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+                loadBannerAds();
+                loadInterstialAds();
+                loadRewardedInterstitialAds();
+            }
+        });
+
+
+        prepareLocationService();
 
         sharedpreferences = getSharedPreferences(default_area, Context.MODE_PRIVATE);
         setDefaultArea("2327.0579");
@@ -144,15 +178,102 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-
-        prepareLocationService();
 
 
 
+    }
+
+    private void loadRewardedInterstitialAds() {
+        RewardedInterstitialAd.load(MapsActivity.this, getString(R.string.rewardedInterstitialAdUnitId),
+                new AdRequest.Builder().build(),  new RewardedInterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(RewardedInterstitialAd ad) {
+                        rewardedInterstitialAd = ad;
+                        rewardedInterstitialAd.show(MapsActivity.this, new OnUserEarnedRewardListener() {
+                            @Override
+                            public void onUserEarnedReward(@NonNull RewardItem rewardItem) {
+                                Log.i(TAG, "reward = "+rewardItem);
+                            }
+                        });
+                        rewardedInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                            /** Called when the ad failed to show full screen content. */
+                            @Override
+                            public void onAdFailedToShowFullScreenContent(AdError adError) {
+                                Log.i(TAG, "onAdFailedToShowFullScreenContent");
+                            }
+
+                            /** Called when ad showed the full screen content. */
+                            @Override
+                            public void onAdShowedFullScreenContent() {
+                                Log.i(TAG, "onAdShowedFullScreenContent");
+                            }
+
+                            /** Called when full screen content is dismissed. */
+                            @Override
+                            public void onAdDismissedFullScreenContent() {
+                                Log.i(TAG, "onAdDismissedFullScreenContent");
+                            }
+                        });
+                        Log.e(TAG, "onAdLoaded");
+                    }
+                    @Override
+                    public void onAdFailedToLoad(LoadAdError loadAdError) {
+                        Log.e(TAG, "onAdFailedToLoad");
+                    }
+                });
+    }
+
+    private void loadInterstialAds() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this,getString(R.string.interstitialAdUnitId), adRequest, new InterstitialAdLoadCallback() {
+            @Override
+            public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                // The mInterstitialAd reference will be null until
+                // an ad is loaded.
+                mInterstitialAd = interstitialAd;
+                mInterstitialAd.show(MapsActivity.this);
+                mInterstitialAd.setFullScreenContentCallback(new FullScreenContentCallback(){
+                    @Override
+                    public void onAdDismissedFullScreenContent() {
+                        // Called when fullscreen content is dismissed.
+                        Log.d("TAG", "The ad was dismissed.");
+                    }
+
+                    @Override
+                    public void onAdFailedToShowFullScreenContent(AdError adError) {
+                        // Called when fullscreen content failed to show.
+                        Log.d("TAG", "The ad failed to show.");
+                    }
+
+                    @Override
+                    public void onAdShowedFullScreenContent() {
+                        // Called when fullscreen content is shown.
+                        // Make sure to set your reference to null so you don't
+                        // show it a second time.
+                        mInterstitialAd = null;
+                        Log.d("TAG", "The ad was shown.");
+                    }
+                });
+                Log.i(TAG, "onAdLoaded");
+            }
+
+            @Override
+            public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                // Handle the error
+                Log.i(TAG, loadAdError.getMessage());
+                mInterstitialAd = null;
+            }
+        });
+    }
+
+
+
+    private void loadBannerAds() {
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView1.loadAd(adRequest);
+        adView2.loadAd(adRequest);
     }
 
     private void setDefaultArea(String s) {
@@ -274,6 +395,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
+
     private void getLocationPermission(){
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},FINE_LOCATION_REQUEST_CODE);
@@ -372,6 +494,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void search(View view) {
+        loadBannerAds();
          if(needMic){
         new StartSpeechRecognition(MapsActivity.this).listenToUser();
         return;
@@ -383,6 +506,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void changeMapType(View view) {
+        loadInterstialAds();
+        loadBannerAds();
         YoYo.with(Techniques.Tada)
                 .duration(500)
                 .repeat(2)
@@ -408,24 +533,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void refreshMap(View view) {
-
+        loadInterstialAds();
         clearAll();
         showLinks(false);
     }
     public void clearAll(){
+        polygon=null;
+        polyline=null;
         lengthTextView.setText("");
         lengthTextView.setVisibility(View.INVISIBLE);
         areaTextView.setText("");
         areaTextView.setVisibility(View.INVISIBLE);
-        YoYo.with(Techniques.RollOut)
-                .duration(300)
-                .playOn(areaTextView);
         mMap.clear();
-        markersList.clear();
+
+        latLngList.clear();
 
     }
 
     public void calculateArea(View view) {
+        loadBannerAds();
         getWhatUserWantToCalculate();
         clearAll();
 
@@ -457,7 +583,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onMapClick(LatLng latLng) {
 
-                markersList.add(latLng);
+                latLngList.add(latLng);
                 addMarker(latLng);
 
                 if(area){
@@ -474,7 +600,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
     private void calculateLengthOfPolyline() {
         PolylineOptions polylineOptions=new PolylineOptions();
-                for(LatLng latLng:markersList){
+                for(LatLng latLng:latLngList){
                     polylineOptions.add(latLng);
                 }
 
@@ -488,19 +614,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void showLengthToUser(boolean isLength) {
         double doublePeri=0.0;
         if(!isLength){
-            doublePeri=SphericalUtil.computeDistanceBetween(markersList.get(0),
-                    markersList.get(markersList.size()-1));
+            doublePeri=SphericalUtil.computeDistanceBetween(latLngList.get(0),
+                    latLngList.get(latLngList.size()-1));
         }
-        double computerLength=SphericalUtil.computeLength(markersList)+doublePeri;
+        double computerLength=SphericalUtil.computeLength(latLngList)+doublePeri;
         lengthTextView.setVisibility(View.VISIBLE);
         double inMeter=getRoundValue(computerLength);           // 1metre =  3.281 feet
         double inKiloMeter=getRoundValue((computerLength/1000)); // 1 acre = 4,049 sqmetre
         double inFeet=getRoundValue(computerLength*3.281);
-        lengthTextView.setText("KM = "+inKiloMeter+"\nMeter = "+inMeter
+        lengthTextView.setText("Length👇\nKM = "+inKiloMeter+"\nMeter = "+inMeter
                 +"\nFeet = "+inFeet);
-        YoYo.with(Techniques.BounceIn)
-                .duration(300)
-                .playOn(areaTextView);
+
     }
     private double getRoundValue(double value){
         DecimalFormat df = new DecimalFormat("###.#");
@@ -521,36 +645,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         MarkerOptions markerOptions=new MarkerOptions();
         markerOptions.position(latLng);
-        markerOptions.draggable(true);
-        markerOptions.title(markersList.size()+"");
+        markerOptions.draggable(false);
+        markerOptions.title(latLngList.size()+"");
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
         mMap.addMarker(markerOptions);
     }
 
     private void calculateAreaofPolygon() {
       PolygonOptions polygonOptions=new PolygonOptions();
-       for(LatLng latLng:markersList){
+       for(LatLng latLng:latLngList){
            polygonOptions.add(latLng);
        }
          polygon = mMap.addPolygon(polygonOptions);
        showLengthToUser(false);
-        showAreaToUser(SphericalUtil.computeArea(markersList));
+        showAreaToUser(SphericalUtil.computeArea(latLngList));
                 stylePolygon();
     }
-    @Override
-    public void onMarkerDragStart(Marker marker) {
 
-    }
 
-    @Override
-    public void onMarkerDrag(Marker marker) {
 
-    }
 
-    @Override
-    public void onMarkerDragEnd(Marker marker) {
-
-    }
             public double getDefaultAreaValue(){
                 String s1 = sharedpreferences.getString(default_area, "");
                 return Double.parseDouble(s1);
@@ -562,11 +676,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double inBiga=getRoundValue((computeArea/getDefaultAreaValue())); // 1 acre = 4,049 sqmetre
         double inSqFeet=getRoundValue(computeArea*3.281*3.281);
         double inAcres=getRoundValue(computeArea/4049);
-        areaTextView.setText("Biga = "+inBiga+"\nSqMeter = "+inSqMeter
+        areaTextView.setText("Area👇\nBiga = "+inBiga+"\nSqMeter = "+inSqMeter
                              +"\nSqFeet = "+inSqFeet+"\nAcres = "+inAcres);
-        YoYo.with(Techniques.BounceIn)
-                .duration(300)
-                .playOn(areaTextView);
+
 
     }
 
@@ -587,6 +699,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     public void openOtherOptions(View view) {
+
         if(isOtherOptionsVisible){
             isOtherOptionsVisible=false;
             fabOtherOptions.startAnimation(animation_close);
@@ -615,12 +728,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     public void moveCameraToMyLocation(View view) {
+        loadRewardedInterstitialAds();
+        loadBannerAds();
         showMeUserCurrentLoaction();
     }
 
 
 
     public void developerInfo(View view) {
+        loadInterstialAds();
+        loadRewardedInterstitialAds();
         showLinks(true);
         LatLng developerLocation = new LatLng(23.60094623768234, 75.45045677572489);
         mMap.addMarker(new MarkerOptions().position(developerLocation).
@@ -644,7 +761,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void showDefaultArea(View view) {
-
+        loadRewardedInterstitialAds();
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle("Default Area Info")
                 .setMessage("We Have A Default Value "+getDefaultAreaValue()+" m² per Bigha. \nIt Can Vary In Differnet Area.\nWould You Like To Change It? ")
@@ -675,11 +792,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     String editTextInput = editText.getText().toString();
                     double val=Double.parseDouble(editTextInput);
-
-                    if(val>1500 && val<3500){
+                    loadInterstialAds();
+                    if(val>=1500 && val<=3500){
                         setDefaultArea(editTextInput);
                 }else {
-                        Toast.makeText(MapsActivity.this, "Sorry! But It Seems That This\nMuch Difference Is Not Possible at all", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MapsActivity.this, "Please Give a Value \nBetween  1500 to 3500", Toast.LENGTH_LONG).show();
                     }
                 })
                 .setNegativeButton("Exit", (dialogInterface, i) -> {
@@ -710,6 +827,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public void linkLinkedIn(View view) {
+
         Uri uri = Uri.parse("https://www.linkedin.com/in/narendra-singh-aanjna-454bb6190");
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         startActivity(intent);

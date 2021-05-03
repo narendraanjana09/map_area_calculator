@@ -28,13 +28,36 @@
 
 
         </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            map:layout_constraintEnd_toEndOf="parent"
+            map:layout_constraintTop_toBottomOf="@id/searchBar"
+            >
+            <com.google.android.gms.ads.AdView
+                xmlns:ads="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/adView1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                ads:adSize="BANNER"
+                ads:adUnitId="@string/adUnitId"/>
+            <com.google.android.gms.ads.AdView
+                xmlns:ads="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/adView2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                ads:adSize="BANNER"
+                ads:adUnitId="@string/adUnitId"/>
+
+        </LinearLayout>
 
 
         <LinearLayout
             android:id="@+id/links"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            map:layout_constraintTop_toBottomOf="@id/searchBar"
+            map:layout_constraintBottom_toTopOf="@id/ZoomLayout"
             map:layout_constraintEnd_toEndOf="parent"
             android:layout_margin="30dp"
             android:visibility="invisible"
@@ -56,7 +79,8 @@
                 app:elevation="0dp"
                 android:layout_marginBottom="5dp"
                 map:layout_constraintBottom_toBottomOf="parent"
-                map:layout_constraintEnd_toEndOf="parent" />
+                map:layout_constraintEnd_toEndOf="parent"
+                android:focusable="true" />
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabinstagram"
                 android:layout_width="wrap_content"
@@ -99,7 +123,7 @@
              android:visibility="invisible"
              map:layout_constraintBottom_toTopOf="@+id/fabMoreOptions"
              map:layout_constraintEnd_toEndOf="parent"
-             >
+             android:layout_alignParentEnd="true">
 
              <com.google.android.material.floatingactionbutton.FloatingActionButton
                  android:id="@+id/fabMapType"
@@ -139,7 +163,8 @@
             android:clickable="true"
             android:backgroundTint="@color/white"
             android:src="@drawable/zoom_in"
-            />
+            tools:targetApi="lollipop"
+            android:focusable="true" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fabZoomOut"
@@ -152,7 +177,10 @@
             app:elevation="0dp"
             app:borderWidth="0dp"
             android:backgroundTint="@color/white"
-            android:src="@drawable/zoom_out"/>
+            android:src="@drawable/zoom_out"
+
+            android:focusable="true"
+            android:contentDescription="@string/todo" />
 
          </LinearLayout>
 
@@ -179,7 +207,9 @@
                 android:backgroundTint="@color/white"
                 android:layout_marginRight="5dp"
                 android:src="@drawable/developer_info"
-                />
+
+                android:contentDescription="@string/todo"
+                android:layout_marginEnd="5dp" />
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabDefaultArea"
                 android:layout_width="wrap_content"
@@ -192,7 +222,10 @@
                 android:backgroundTint="@color/white"
                 android:layout_marginRight="5dp"
                 android:src="@drawable/deafult_area"
-                />
+                android:contentDescription="TODO"
+                android:focusable="true"
+
+                android:layout_marginEnd="5dp" />
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabRefresh"
                 android:layout_width="wrap_content"
@@ -205,7 +238,10 @@
                 android:backgroundTint="@color/white"
                 android:layout_marginRight="5dp"
                 android:src="@drawable/refresh"
-                />
+
+                android:focusable="true"
+                android:layout_marginEnd="5dp"
+                android:contentDescription="TODO" />
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabCalculateArea"
                 android:layout_width="wrap_content"
@@ -218,7 +254,10 @@
                 android:backgroundTint="@color/white"
                 android:layout_marginRight="5dp"
                 android:src="@drawable/calculate"
-                />
+                android:contentDescription="@string/todo"
+                android:focusable="true"
+
+                android:layout_marginEnd="5dp" />
         </LinearLayout>
     <TextView
         android:id="@+id/lengthTextView"
@@ -227,17 +266,19 @@
         android:textSize="16sp"
         android:textColor="@color/black"
         android:visibility="invisible"
-        android:text="Area = 12 biga"
+
         android:textAlignment="center"
         android:padding="10dp"
-        android:hint="Length"
+        android:tooltipText="Length"
         android:scrollbars="horizontal"
         android:background="@drawable/circular_background"
         map:layout_constraintStart_toStartOf="parent"
         map:layout_constraintBottom_toTopOf="@+id/areaTextView"
         android:layout_marginBottom="20dp"
         android:layout_marginLeft="30dp"
-        android:gravity="center_horizontal" />
+        android:gravity="center_horizontal"
+
+        android:layout_marginStart="30dp" />
         <TextView
             android:id="@+id/areaTextView"
             android:layout_width="wrap_content"
@@ -245,8 +286,8 @@
             android:textSize="16sp"
             android:textColor="@color/black"
             android:visibility="invisible"
-            android:text="Area = 12 biga"
-            android:hint="Area"
+
+            android:tooltipText="Area"
             android:scrollbars="horizontal"
             android:textAlignment="center"
             android:padding="10dp"
@@ -255,7 +296,9 @@
             map:layout_constraintBottom_toTopOf="@id/CalculatorLayout"
             android:layout_marginBottom="10dp"
             android:layout_marginLeft="30dp"
-            android:gravity="center_horizontal" />
+            android:gravity="center_horizontal"
+
+            android:layout_marginStart="30dp" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </fragment>
