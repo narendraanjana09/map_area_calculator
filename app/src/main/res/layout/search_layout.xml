@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:weightSum="10"
+    android:background="@drawable/circular_background"
+    android:gravity="center"
+   >
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabUserInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        app:elevation="0dp"
+        app:borderWidth="0dp"
+        android:clickable="false"
+        android:backgroundTint="@color/white"
+        android:src="@drawable/search"
+        />
+
+    <EditText
+        android:id="@+id/searchEditText"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_weight="8"
+        android:hint="Search Here"
+        android:inputType="textPersonName|text"
+        android:textColor="@color/black"
+        android:textColorHint="@color/dark"
+        android:imeOptions="actionSearch"
+        />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="search"
+        android:layout_weight="1"
+        app:elevation="0dp"
+        app:borderWidth="0dp"
+        android:clickable="true"
+        android:backgroundTint="@color/white"
+        android:src="@drawable/mic"
+        />
+
+</LinearLayout>
