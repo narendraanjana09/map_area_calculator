@@ -13,5 +13,27 @@
     <string name="rewardedInterstitialAdUnitId">ca-app-pub-6992515405283697/4140447379</string>
     <string name="todo">TODO</string>
 
+    <string name="length_text">Distance</string>
+    <string name="area_text">Area</string>
+    <string name="perimeter_text">Perimeter</string>
+    <string name="default_area">2327.0579</string>
+    <string name="no_place_toast">No Place Found</string>
+    <string name="location_access_title">We do not have information about your location!</string>
+    <string name="location_access_message">Would You Like to Give Us Access?</string>
+    <string name="access_grant">Grant Access!</string>
+    <string name="access_deny">Deny!</string>
+    <string name="check_calculate_title">What do you want to calculate?</string>
+    <string name="bigha_text">Bigha</string>
+    <string name="default_area_title">Default Area Info!</string>
+    <string name="default_area_message1">We Have A Default Value of 2327 m² per Bigha.</string>
+    <string name="default_area_message2">It Can Vary In Different Areas \nWould You Like To Change It?</string>
+    <string name="yes_text">Yes</string>
+    <string name="no_text">No</string>
+    <string name="ok_text">Ok</string>
+    <string name="cancel_text">Cancel</string>
+    <string name="change_default_area_title">Change Default Area Value!</string>
+    <string name="change_default_area_message">Alright, how many meters squares you have per bigha?</string>
+    <string name="change_default_area_toast">Please Give a Value\nBetween  1500m² to 3500m²!</string>
+
 
 </resources>

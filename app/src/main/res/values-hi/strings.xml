@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Area Calculator</string>
+    <string name="title_activity_maps">Area Calculator</string>
+    <string name="nav_open">Open</string>
+    <string name="nav_close">Close</string>
+
+    <string name="testAppId">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="AppId">ca-app-pub-6992515405283697~4335888493</string>
+
+    <string name="testAdUnitId">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="adUnitId">ca-app-pub-6992515405283697/8592001735</string>
+    <string name="interstitialAdUnitId">ca-app-pub-6992515405283697/9138812551</string>
+    <string name="rewardedInterstitialAdUnitId">ca-app-pub-6992515405283697/4140447379</string>
+    <string name="todo">TODO</string>
+
+    <string name="length_text">दूरी</string>
+    <string name="area_text">क्षेत्र</string>
+    <string name="perimeter_text">परिमाप</string>
+    <string name="default_area">2327.0579</string>
+    <string name="no_place_toast">जगह नहीं मिली!</string>
+    <string name="location_access_title">हमारे पास आपके स्थान की जानकारी नहीं है!</string>
+    <string name="location_access_message">क्या आप हमें प्रवेश देना चाहेंगे?</string>
+    <string name="access_grant">प्रदान करें!</string>
+    <string name="access_deny">मना करें!</string>
+    <string name="check_calculate_title">आप क्या गणना करना चाहते हैं?</string>
+    <string name="bigha_text">बीघा</string>
+    <string name="default_area_title">डिफ़ॉल्ट क्षेत्र की जानकारी!</string>
+    <string name="default_area_message1">हमारे पास प्रति बीघा 2327 वर्ग मीटर का डिफ़ॉल्ट मूल्य है।</string>
+    <string name="default_area_message2">यह विभिन्न क्षेत्रों में भिन्न हो सकता है \nक्या आप इसे बदलना पसंद करेंगे?</string>
+    <string name="yes_text">हाँ</string>
+    <string name="no_text">नहीं</string>
+    <string name="ok_text">ठीक है</string>
+    <string name="cancel_text">रद्द करें</string>
+    <string name="change_default_area_title">डिफ़ॉल्ट क्षेत्र मान बदलें!</string>
+    <string name="change_default_area_message">ठीक है, आपके पास प्रति बीघा कितने मीटर वर्ग है?</string>
+    <string name="change_default_area_toast">कृपया 1500m² से 3500m² के बीच मान दें!</string>
+
+
+</resources>

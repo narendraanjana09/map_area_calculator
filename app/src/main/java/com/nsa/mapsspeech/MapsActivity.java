@@ -7,11 +7,13 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.location.LocationManagerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -20,14 +22,19 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Looper;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.text.Editable;
@@ -43,9 +50,11 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -66,7 +75,9 @@ import com.google.android.gms.ads.rewarded.RewardItem;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -92,9 +103,11 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.maps.android.SphericalUtil;
+import com.nsa.mapsspeech.ExtraClasses.LanguageHelper;
 import com.nsa.mapsspeech.ExtraClasses.StartSpeechRecognition;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -114,18 +127,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private FusedLocationProviderClient locationProviderClient;
 
+
     private LocationRequest locationRequest;
 
-    FloatingActionButton fabMapType,fabOtherOptions,fabMic;
+    FloatingActionButton fabMapType,fabOtherOptions,fabMic,fabShareLocation,fabCancelLocationShare;
 
     int isMapNumber=1;
     boolean isOtherOptionsVisible=false;
     boolean needMic=true;
 
     List<LatLng> latLngList=new ArrayList<>();
+    LatLng userLocation,shareLocation=null;
 
     Polygon polygon;
     Polyline polyline;
+    Switch switchLanguageChanger;
 
     private LinearLayout zoomLayout,calculatorLayout,linksLayout;
     AdView adView1,adView2;
@@ -135,17 +151,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final int SPEECH_REQUEST=10;
     private Animation animation_open,animation_close;
-
+    Context context;
+    Resources resources;
     public static final String default_area = "Default_Area";
     SharedPreferences sharedpreferences;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-
+        resources=getResources();
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        switchLanguageChanger=findViewById(R.id.changeLanguageSwitch);
+        changeLanguage();
         adView1 = findViewById(R.id.adView1);
         adView2 = findViewById(R.id.adView2);
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
@@ -161,10 +180,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         prepareLocationService();
 
         sharedpreferences = getSharedPreferences(default_area, Context.MODE_PRIVATE);
-        setDefaultArea("2327.0579");
+        setDefaultArea(resources.getString(R.string.default_area));
         fabMapType=findViewById(R.id.fabMapType);
         fabMic=findViewById(R.id.fabMic);
         fabOtherOptions=findViewById(R.id.fabMoreOptions);
+        fabShareLocation=findViewById(R.id.fabShareLocation);
+        fabCancelLocationShare=findViewById(R.id.fabCancelLocationShare);
         zoomLayout=findViewById(R.id.ZoomLayout);
         areaTextView=findViewById(R.id.areaTextView);
         lengthTextView=findViewById(R.id.lengthTextView);
@@ -183,6 +204,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    public void changeLanguage(){
+        switchLanguageChanger.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    context = LanguageHelper.setLocale(MapsActivity.this, "hi");
+                    resources = context.getResources();
+                    switchLanguageChanger.setText("hi");
+
+                }else{
+                    context = LanguageHelper.setLocale(MapsActivity.this, "en");
+                    resources = context.getResources();
+                    switchLanguageChanger.setText("en");
+
+                }
+            }
+        });
+    }
     private void loadRewardedInterstitialAds() {
         RewardedInterstitialAd.load(MapsActivity.this, getString(R.string.rewardedInterstitialAdUnitId),
                 new AdRequest.Builder().build(),  new RewardedInterstitialAdLoadCallback() {
@@ -360,11 +399,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         mMap.addMarker(new MarkerOptions().position(latLng).title(location));
 
                         // below line is to animate camera to that position.
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 7));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (IndexOutOfBoundsException exception){
-                        Toast.makeText(MapsActivity.this, "No Place Found", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MapsActivity.this, resources.getString(R.string.no_place_toast), Toast.LENGTH_SHORT).show();
                     }
                     // on below line we are getting the location
                     // from our list a first position.
@@ -387,7 +426,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
 
-        showMeUserCurrentLoaction();
+        if(isLocationEnabled(MapsActivity.this)){
+            showMeUserCurrentLoaction();
+        }else{
+            showLocationEnableDialog();
+        }
 
 
 
@@ -400,6 +443,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},FINE_LOCATION_REQUEST_CODE);
     }
+    private boolean isLocationEnabled(Context context) {
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        return LocationManagerCompat.isLocationEnabled(locationManager);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -407,7 +454,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         if(requestCode == FINE_LOCATION_REQUEST_CODE || requestCode == 101){
             if(grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                if(isLocationEnabled(MapsActivity.this)){
                 showMeUserCurrentLoaction();
+                }else{
+                    showLocationEnableDialog();
+                }
             }else{
                giveLocationAlert();
 
@@ -415,11 +466,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    private void showLocationEnableDialog() {
+        AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
+                .setTitle("Your Loaction Service Is Disabled!")
+                .setMessage("Enable It To Get Your current Location!")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                })
+                .create();
+        dialog.show();
+    }
+
     private void giveLocationAlert() {
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("We Don't Have Acces To Your Location!")
-                .setMessage("Would You Like Give Us Access?")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                .setTitle(resources.getString(R.string.location_access_title))
+                .setMessage(resources.getString(R.string.location_access_message))
+                .setPositiveButton(resources.getString(R.string.access_grant), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
@@ -428,10 +500,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         startActivity(intent);
                     }
                 })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                .setNegativeButton(resources.getString(R.string.access_deny), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        Toast.makeText(MapsActivity.this, "Location Access Denied!", Toast.LENGTH_SHORT).show();
+
                     }
                 })
                 .create();
@@ -454,7 +526,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         }
     }
-
+    int count=0;
     private void showMeUserCurrentLoaction() {
         if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED){
@@ -466,13 +538,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setMyLocationEnabled(true);
 
 
-            Task<Location> currentLocation=locationProviderClient.getLastLocation();
+           Task<Location> currentLocation=locationProviderClient.getLastLocation();
             currentLocation.addOnSuccessListener(new OnSuccessListener<Location>() {
                 @Override
                 public void onSuccess(Location location) {
-                    LatLng latLng=new LatLng(location.getLatitude(),location.getLongitude());
-                    CameraUpdate update=CameraUpdateFactory.newLatLngZoom(latLng,16);
+
+                    if(location==null){
+                        if(count==0) {
+                            count=1;
+                            prepareLocationService();
+                        }
+                        new CountDownTimer(3000,1000){
+
+                            @Override
+                            public void onTick(long millisUntilFinished) {
+
+                            }
+
+                            @Override
+                            public void onFinish() {
+                                showMeUserCurrentLoaction();
+                            }
+                        };
+
+
+                    }else{
+                    userLocation=new LatLng(location.getLatitude(),location.getLongitude());
+                    CameraUpdate update=CameraUpdateFactory.newLatLngZoom(userLocation,16);
                     mMap.animateCamera(update);
+                }
                 }
             });
 
@@ -481,6 +575,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
     }
+//    @SuppressLint("MissingPermission")
+//    private void requestNewLocationData() {
+//
+//        // Initializing LocationRequest
+//        // object with appropriate methods
+//        LocationRequest mLocationRequest = new LocationRequest();
+//        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+//        mLocationRequest.setInterval(5);
+//        mLocationRequest.setFastestInterval(0);
+//        mLocationRequest.setNumUpdates(1);
+//
+//        // setting LocationRequest
+//        // on FusedLocationClient
+//        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
+//        mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+//    }
+//
+//    private LocationCallback mLocationCallback = new LocationCallback() {
+//
+//        @Override
+//        public void onLocationResult(LocationResult locationResult) {
+//            location = locationResult.getLastLocation();
+//
+//
+//        }
+//    };
     private void prepareLocationService(){
       locationProviderClient= LocationServices.getFusedLocationProviderClient(this);
     }
@@ -538,6 +658,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         showLinks(false);
     }
     public void clearAll(){
+
         polygon=null;
         polyline=null;
         lengthTextView.setText("");
@@ -558,43 +679,51 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
            
 
     }
-
+    String lengthText;
     private void getWhatUserWantToCalculate() {
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("What You Want To Calculaye?")
-                .setPositiveButton("Area", new DialogInterface.OnClickListener() {
+                .setTitle(resources.getString(R.string.check_calculate_title))
+                .setPositiveButton(resources.getString(R.string.area_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        addMarkerOnMap(true);
+                        lengthText=resources.getString(R.string.perimeter_text)+"👇";
+                        addMarkerOnMap(true,false);
                     }
                 })
-                .setNegativeButton("Length", new DialogInterface.OnClickListener() {
+                .setNegativeButton(resources.getString(R.string.length_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        addMarkerOnMap(false);
+                        lengthText=resources.getString(R.string.length_text)+"👇";
+                        addMarkerOnMap(false,false);
                     }
                 })
                 .create();
         dialog.show();
         
     }
-    private void addMarkerOnMap(boolean area){
+    private void addMarkerOnMap(boolean area,boolean isLocation){
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
 
-                latLngList.add(latLng);
-                addMarker(latLng);
 
-                if(area){
+
+                if(isLocation){
+                    mMap.clear();
+                    shareLocation=latLng;
+                    addMarker(latLng,"");
+                }else {
+                    addMarker(latLng,latLngList.size()+"");
+                    latLngList.add(latLng);
+                    if (area) {
 
                         calculateAreaofPolygon();
 
-                }else{
-                    calculateLengthOfPolyline();
+                    } else {
+                        calculateLengthOfPolyline();
+                    }
+
                 }
-
-
             }
         });
     }
@@ -622,7 +751,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double inMeter=getRoundValue(computerLength);           // 1metre =  3.281 feet
         double inKiloMeter=getRoundValue((computerLength/1000)); // 1 acre = 4,049 sqmetre
         double inFeet=getRoundValue(computerLength*3.281);
-        lengthTextView.setText("Length👇\nKM = "+inKiloMeter+"\nMeter = "+inMeter
+        lengthTextView.setText(lengthText+"\nKM = "+inKiloMeter+"\nMeter = "+inMeter
                 +"\nFeet = "+inFeet);
 
     }
@@ -641,12 +770,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-    private void addMarker(LatLng latLng) {
+    private void addMarker(LatLng latLng,String title) {
 
         MarkerOptions markerOptions=new MarkerOptions();
         markerOptions.position(latLng);
         markerOptions.draggable(false);
-        markerOptions.title(latLngList.size()+"");
+        markerOptions.title(title);
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
         mMap.addMarker(markerOptions);
     }
@@ -676,7 +805,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         double inBiga=getRoundValue((computeArea/getDefaultAreaValue())); // 1 acre = 4,049 sqmetre
         double inSqFeet=getRoundValue(computeArea*3.281*3.281);
         double inAcres=getRoundValue(computeArea/4049);
-        areaTextView.setText("Area👇\nBiga = "+inBiga+"\nSqMeter = "+inSqMeter
+        areaTextView.setText(resources.getString(R.string.area_text)+"👇\n"+resources.getString(R.string.bigha_text)+" = "+inBiga+"\nSqMeter = "+inSqMeter
                              +"\nSqFeet = "+inSqFeet+"\nAcres = "+inAcres);
 
 
@@ -703,12 +832,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(isOtherOptionsVisible){
             isOtherOptionsVisible=false;
             fabOtherOptions.startAnimation(animation_close);
-            YoYo.with(Techniques.FadeInDown)
-                    .duration(1200)
-                    .playOn(zoomLayout);
-            YoYo.with(Techniques.FadeInLeft)
-                    .duration(600)
-                    .playOn(calculatorLayout);
+            showLinks(false);
             zoomLayout.setVisibility(View.INVISIBLE);
             calculatorLayout.setVisibility(View.INVISIBLE);
 
@@ -730,7 +854,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void moveCameraToMyLocation(View view) {
         loadRewardedInterstitialAds();
         loadBannerAds();
-        showMeUserCurrentLoaction();
+        if(isLocationEnabled(MapsActivity.this)){
+            showMeUserCurrentLoaction();
+        }else{
+            showLocationEnableDialog();
+        }
     }
 
 
@@ -763,15 +891,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void showDefaultArea(View view) {
         loadRewardedInterstitialAds();
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("Default Area Info")
-                .setMessage("We Have A Default Value "+getDefaultAreaValue()+" m² per Bigha. \nIt Can Vary In Differnet Area.\nWould You Like To Change It? ")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                .setTitle(resources.getString(R.string.default_area_title))
+                .setMessage(resources.getString(R.string.default_area_message1)+"\n"+resources.getString(R.string.default_area_message2))
+                .setPositiveButton(resources.getString(R.string.yes_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         changeDefaultAreaDialog();
                     }
                 })
-                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                .setNegativeButton(resources.getString(R.string.no_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -785,10 +913,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER);
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setTitle("Change Default Area Value!")
-                .setMessage("Allright Give us the value of 1 Bigha to Meter Square:-")
+                .setTitle(resources.getString(R.string.change_default_area_title))
+                .setMessage(resources.getString(R.string.change_default_area_message))
                 .setView(editText)
-                .setPositiveButton("Done", (dialogInterface, i) -> {
+                .setPositiveButton(resources.getString(R.string.ok_text), (dialogInterface, i) -> {
 
                     String editTextInput = editText.getText().toString();
                     double val=Double.parseDouble(editTextInput);
@@ -796,10 +924,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if(val>=1500 && val<=3500){
                         setDefaultArea(editTextInput);
                 }else {
-                        Toast.makeText(MapsActivity.this, "Please Give a Value \nBetween  1500 to 3500", Toast.LENGTH_LONG).show();
+                        Toast.makeText(MapsActivity.this, resources.getString(R.string.change_default_area_toast), Toast.LENGTH_LONG).show();
                     }
                 })
-                .setNegativeButton("Exit", (dialogInterface, i) -> {
+                .setNegativeButton(resources.getString(R.string.cancel_text), (dialogInterface, i) -> {
 
                 })
                 .create();
@@ -836,5 +964,76 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Uri uri = Uri.parse("https://www.instagram.com/narendra_aanjna_09");
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         startActivity(intent);
+    }
+
+    public void share(View view) {
+        AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
+                .setTitle("Share...")
+                .setPositiveButton("Location", (dialogInterface, i) -> {
+                    setMarker();
+                })
+                .setNegativeButton("App", (dialogInterface, i) -> {
+                    shareAppLink();
+                })
+                .create();
+        dialog.show();
+    }
+
+    private void shareAppLink() {
+        final String appPackageName = getPackageName();
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, "Check out Area Calculator On Google Play Store: https://play.google.com/store/apps/details?id=" + appPackageName);
+        sendIntent.setType("text/plain");
+      startActivity(sendIntent);
+    }
+
+    private void setMarker() {
+
+        Toast.makeText(MapsActivity.this, "You can Change This Marker\nBy Clicking Over The Map!", Toast.LENGTH_LONG).show();
+                    addMarker(userLocation,"Your Location");
+                    shareLocation=userLocation;
+                    fabOtherOptions.callOnClick();
+                    fabShareLocation.setVisibility(View.VISIBLE);
+                    fabCancelLocationShare.setVisibility(View.VISIBLE);
+                    fabOtherOptions.setVisibility(View.INVISIBLE);
+                    addMarkerOnMap(false,true);
+
+    }
+
+    public void cancelLocationShare(View view) {
+        mMap.setOnMapClickListener(null);
+        mMap.clear();
+        shareLocation=null;
+        fabOtherOptions.setVisibility(View.VISIBLE);
+        fabShareLocation.setVisibility(View.INVISIBLE);
+        fabCancelLocationShare.setVisibility(View.INVISIBLE);
+    }
+
+    public void shareLocation(View view) {
+        if(shareLocation==null){
+            Toast.makeText(MapsActivity.this, "Please Select A Location By Click On It First!", Toast.LENGTH_SHORT).show();
+        }else{
+            AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
+                    .setTitle("Do you Want To Share This Location?")
+                    .setPositiveButton(resources.getString(R.string.yes_text), (dialogInterface, i) -> {
+                        shareLocationIntent();
+                    })
+                    .setNegativeButton(resources.getString(R.string.no_text),(dialogInterface, i) -> {
+                    })
+                    .create();
+            dialog.show();
+        }
+    }
+
+    private void shareLocationIntent() {
+
+        String uri="https://www.google.com/maps/dir/?api=1&destination="+shareLocation.latitude+"%2C"+shareLocation.longitude;
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, uri);
+        sendIntent.setType("text/plain");
+        startActivity(sendIntent);
+
     }
 }
