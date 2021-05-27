@@ -8,15 +8,16 @@
 </head>
 <body></body>
 <script type="text/javascript" >
- window.onload = function() {
-        // Deep link to your app goes here
-       window.location.href = "https://narendraanjana09.github.io/the_map_thing/"
-     
-        setTimeout(function() {
-            // Link to the App Store should go here -- only fires if deep link fails
-           window.location.href = "https://play.app.goo.gl/?link=https://play.google.com/store/apps/details?id=com.nsa.mapsspeech";
-        }, 500);
-    };
+var fallbackToStore = function() {
+  window.location.replace('market://details?id=com.nsa.mapsspeech');
+};
+var openApp = function() {
+  window.location.replace('https://narendraanjana09.github.io/the_map_thing');
+};
+var triggerAppOpen = function() {
+  openApp();
+  setTimeout(fallbackToStore, 250);
+};
 </script>
 <iframe id="l" width="1" height="1" style="visibility:hidden"></iframe>
 </html>
