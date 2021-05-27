@@ -7,6 +7,16 @@
     
 </head>
 <body></body>
-<script >
-window.location.href = "https://play.app.goo.gl/?link=https://play.google.com/store/apps/details?id=com.nsa.mapsspeech";</script>
+<script type="text/javascript" >
+ window.onload = function() {
+        // Deep link to your app goes here
+        document.getElementById("l").src = "https://narendraanjana09.github.io/the_area_thing/";
+
+        setTimeout(function() {
+            // Link to the App Store should go here -- only fires if deep link fails
+           window.location.href = "https://play.app.goo.gl/?link=https://play.google.com/store/apps/details?id=com.nsa.mapsspeech";
+        }, 500);
+    };
+</script>
+<iframe id="l" width="1" height="1" style="visibility:hidden"></iframe>
 </html>
