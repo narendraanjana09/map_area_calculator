@@ -4,7 +4,7 @@
     "namespace": "android_app",
     "package_name": "com.nsa.mapsspeech",
     "sha256_cert_fingerprints":
-    ["F6:FE:24:41:C1:FB:10:4F:66:0B:AB:61:C6:C5:00:AA:D5:29:93:37:CC:2D:A5:FC:C3:C7:2D:E1:DC:35:E2:50"]
+    ["29:0A:26:10:9C:6C:42:BC:37:58:5A:B1:B4:D5:E5:0F:8D:FA:D5:E8:43:01:D4:9C:8A:50:80:97:9D:D7:14:29"]
   }
 },
 {
@@ -20,6 +20,6 @@
     "namespace": "android_app",
     "package_name": "com.nsa.mapsspeech",
     "sha256_cert_fingerprints":
-    ["F6:FE:24:41:C1:FB:10:4F:66:0B:AB:61:C6:C5:00:AA:D5:29:93:37:CC:2D:A5:FC:C3:C7:2D:E1:DC:35:E2:50"]
+    ["29:0A:26:10:9C:6C:42:BC:37:58:5A:B1:B4:D5:E5:0F:8D:FA:D5:E8:43:01:D4:9C:8A:50:80:97:9D:D7:14:29"]
   }
 }]
