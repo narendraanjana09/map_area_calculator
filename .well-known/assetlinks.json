@@ -1,0 +1,25 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.nsa.mapsspeech",
+    "sha256_cert_fingerprints":
+    ["F6:FE:24:41:C1:FB:10:4F:66:0B:AB:61:C6:C5:00:AA:D5:29:93:37:CC:2D:A5:FC:C3:C7:2D:E1:DC:35:E2:50"]
+  }
+},
+{
+  "relation": ["delegate_permission/common.get_login_creds"],
+  "target": {
+    "namespace": "web",
+    "site": "https://narendraanjana09.github.io"
+  }
+},
+{
+  "relation": ["delegate_permission/common.get_login_creds"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.nsa.mapsspeech",
+    "sha256_cert_fingerprints":
+    ["F6:FE:24:41:C1:FB:10:4F:66:0B:AB:61:C6:C5:00:AA:D5:29:93:37:CC:2D:A5:FC:C3:C7:2D:E1:DC:35:E2:50"]
+  }
+}]
