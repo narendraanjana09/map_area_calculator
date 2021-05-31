@@ -1,8 +1,18 @@
 <resources>
-    <string name="app_name">Area Calculator</string>
-    <string name="title_activity_maps">Area Calculator</string>
+    <string name="app_name">The Map Thing</string>
+    <string name="title_activity_maps">The Map Thing</string>
     <string name="nav_open">Open</string>
     <string name="nav_close">Close</string>
+
+    <string name="map_id">f2cd2e3cf71dc6c7</string>
+
+    <string name="api_key">AIzaSyAcG10Fwe7c38qE1zQSqrZrzShbI4qVvQs</string>
+    <string name="google_client_id">1018363210699-vcgp8ophisr9hjfn1qmv8meqqv9q478o.apps.googleusercontent.com</string>
+
+
+    <string name="mapbox_access_token" translatable="false">sk.eyJ1IjoibmFyZW5kcmEtbnNhIiwiYSI6ImNrcDN2dmQzOTAwbngzMG56aXQzbG8zMTIifQ.GiVkhSjKbfOEpkWNijjHQQ</string>
+    <string name="user_location_permission_explanation">This app needs location permissions to show its functionality.</string>
+    <string name="user_location_permission_not_granted">You didn\'t grant location permissions.</string>
 
     <string name="testAppId">ca-app-pub-3940256099942544~3347511713</string>
     <string name="AppId">ca-app-pub-6992515405283697~4335888493</string>
@@ -36,4 +46,26 @@
     <string name="change_default_area_toast">Please Give a Value\nBetween  1500m² to 3500m²!</string>
 
 
+    <string name="input_title_listening">Listening…</string>
+    <string name="input_subtitle_listening">Say something like:</string>
+    <string name="input_title_error">Sorry, we didn\'t quite get that.</string>
+    <string name="input_subtitle_error">Try repeating your request.</string>
+    <string name="input_hint_error">Try again</string>
+
+    <!-- VoicePermissionDialogFragment -->
+    <string name="permission_title">You can use voice search to find products.</string>
+    <string name="permission_subtitle">May we access your device’s microphone to enable voice search?</string>
+    <string name="permission_button_allow">Allow microphone access</string>
+    <string name="permission_button_reject">No</string>
+
+    <!-- Rationale/Try Again -->
+    <string name="permission_rationale">Voice search requires this permission.</string>
+    <string name="permission_button_again">Request again?</string>
+
+    <!-- Manual Instructions -->
+    <string name="permission_enable_rationale">Permission denied, allow it to use voice search.</string>
+    <string name="permission_button_enable">Allow recording</string>
+    <string name="permission_enable_instructions">On the next screen, tap Permissions then Microphone.</string>
+    <string name="asset_statements" translatable="false">[{ \"include\": \"https://narendraanjana09.github.io/.well-known/assetlinks.json\" }]</string>
+    <string name="title_activity_real_time_view">Map</string>
 </resources>

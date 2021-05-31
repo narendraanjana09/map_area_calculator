@@ -29,6 +29,8 @@ public class StartSpeechRecognition {
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         voiceIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,10);
         activity.startActivityForResult(voiceIntent,SPEECH_REQUEST);
+
+
     }
 
 

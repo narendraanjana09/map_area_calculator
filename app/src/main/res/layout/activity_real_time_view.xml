@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:map="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/map"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Activities.RealTimeViewActivity" >
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <TextView
+            android:id="@+id/data"
+            android:padding="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:textColor="@color/black"
+            android:scrollbars="vertical"
+            map:layout_constraintTop_toTopOf="parent"
+            map:layout_constraintStart_toStartOf="parent"
+            />
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintStart_toStartOf="parent"
+            android:layout_marginBottom="30dp"
+            android:layout_marginStart="10dp"
+            >
+
+            <TextView
+                android:id="@+id/batteryLevelTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="4dp"
+                android:layout_alignParentTop="true"
+                android:drawableLeft="@drawable/battery_std"
+                android:gravity="center"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/speedTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="4dp"
+                android:layout_below="@id/batteryLevelTextView"
+                android:drawableLeft="@drawable/speed"
+                android:gravity="center"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/statusTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="4dp"
+                android:layout_below="@id/speedTextView"
+                android:drawableLeft="@drawable/location_on"
+                android:gravity="center"
+                android:textColor="@color/black"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+        </RelativeLayout>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabNavigationStart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="startNaviagtion"
+            app:elevation="0dp"
+            android:rotation="90"
+            android:layout_marginEnd="5dp"
+            android:visibility="invisible"
+            app:borderWidth="0dp"
+            android:tooltipText="Your Current Location"
+            android:layout_marginBottom="30dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/navigation"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toStartOf="@id/ZoomLayout"
+            />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabNavigationCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="cancelNavigation"
+            app:elevation="0dp"
+            android:visibility="invisible"
+            android:rotation="90"
+            android:layout_marginEnd="5dp"
+            app:borderWidth="0dp"
+            android:tooltipText="Your Current Location"
+            android:layout_marginBottom="30dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/close_icon"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toStartOf="@id/ZoomLayout"
+            />
+        <LinearLayout
+            android:id="@+id/ZoomLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_margin="30dp"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toEndOf="parent">
+
+            <Switch
+                android:id="@+id/switchOnOff"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:trackTint="@color/black"
+                android:thumbTint="@color/white"
+                android:textColor="@color/black"
+                android:checked="false"
+                android:text="off"/>
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabGetRoute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="getWay"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:tooltipText="Your Current Location"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/direction"
+                />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabChangeMapType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="changeMapType"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:tooltipText="Your Current Location"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/map"
+                />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabZoomIn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="zoomIn"
+                android:layout_marginBottom="5dp"
+                app:elevation="0dp"
+                android:tooltipText="Zoom In"
+                app:borderWidth="0dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/zoom_in"
+                tools:targetApi="lollipop"
+                android:focusable="true" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabZoomOut"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="zoomOut"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:tooltipText="Zoom Out Link"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/zoom_out"
+
+                android:focusable="true"
+                android:contentDescription="@string/todo" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</fragment>
