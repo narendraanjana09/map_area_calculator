@@ -68,4 +68,10 @@
     <string name="permission_enable_instructions">On the next screen, tap Permissions then Microphone.</string>
     <string name="asset_statements" translatable="false">[{ \"include\": \"https://narendraanjana09.github.io/.well-known/assetlinks.json\" }]</string>
     <string name="title_activity_real_time_view">Map</string>
+    <string name="title_activity_add_on_map">Map</string>
+    <string name="navigation_drawer_open">open</string>
+    <string name="navigation_drawer_close">close</string>
+    <string name="nav_header_title">title</string>
+    <string name="nav_header_subtitle">subtitle</string>
+    <string name="title_activity_">Map</string>
 </resources>

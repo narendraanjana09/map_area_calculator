@@ -10,9 +10,9 @@ import java.util.Date;
 public class Common {
     public static final String KEY_REQUESTING_LOCATION_UPDATES ="Location Update Enable" ;
 
-    public static String getLocationText(Location mLocation) {
+    public static String getLocationText(String text) {
         return new StringBuilder()
-                .append("Real time location share is on!")
+                .append("Real time location share is on!"+text)
                 .toString();
     }
 

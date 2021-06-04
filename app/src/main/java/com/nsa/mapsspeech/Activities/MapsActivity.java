@@ -1,10 +1,14 @@
 package com.nsa.mapsspeech.Activities;
 
+import androidx.activity.contextaware.OnContextAvailableListener;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.location.LocationManagerCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
@@ -13,6 +17,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.TimePickerDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -45,11 +50,14 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -61,6 +69,7 @@ import android.widget.LinearLayout;
 
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.daimajia.androidanimations.library.Techniques;
@@ -111,6 +120,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -131,6 +141,12 @@ import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+import com.kazakago.cryptore.BlockMode;
+import com.kazakago.cryptore.CipherAlgorithm;
+import com.kazakago.cryptore.Cryptore;
+import com.kazakago.cryptore.DecryptResult;
+import com.kazakago.cryptore.EncryptResult;
+import com.kazakago.cryptore.EncryptionPadding;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.geojson.Point;
@@ -153,8 +169,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -165,10 +183,9 @@ import retrofit2.Response;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
-        RecognitionListener,SharedPreferences.OnSharedPreferenceChangeListener{
+        RecognitionListener, SharedPreferences.OnSharedPreferenceChangeListener,NavigationView.OnNavigationItemSelectedListener{
 
-
-    @Override
+        @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
 
         if(key.equals(Common.KEY_REQUESTING_LOCATION_UPDATES) ){
@@ -265,8 +282,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Animation animation_open, animation_close;
     Context context;
     Resources resources;
-    public static final String default_area = "Default_Area";
-    SharedPreferences sharedpreferences;
+    double default_area ;
+
     private MapboxNavigation navigation;
     private DirectionsRoute currentRoute;
 
@@ -277,6 +294,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Intent recognizerIntent;
     private String LOG_TAG = "VoiceRecognition";
     boolean gotDeepLink=false;
+    SharedPreferences sharedPreferences ;
+
+        private DrawerLayout drawerLayout;
+        private NavigationView navigationView;
 
 
     private void resetSpeechRecognizer() {
@@ -309,13 +330,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         setContentView(R.layout.activity_maps);
-
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView=findViewById(R.id.navigation_view);
+        navigationView.setNavigationItemSelectedListener(this);
+        default_area= Double.parseDouble(getResources().getString(R.string.default_area));
         instance=this;
         FirebaseApp.initializeApp(this);
         guser= GoogleSignIn.getLastSignedInAccount(this);
         fuser= FirebaseAuth.getInstance().getCurrentUser();
         profileImageView=findViewById(R.id.circlarImageView);
       Picasso.get().load(guser.getPhotoUrl()).into(profileImageView);
+        sharedPreferences = getSharedPreferences("MySharedPref",MODE_PRIVATE);
+
+
+
+
 
 
         setRecogniserIntent();
@@ -328,11 +357,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         resources = getResources();
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-
+        mapFragment.getMapAsync(this);
      
         Mapbox.getInstance(this, resources.getString(R.string.mapbox_access_token));
         navigation = new MapboxNavigation(MapsActivity.this, resources.getString(R.string.mapbox_access_token));
-        mapFragment.getMapAsync(this);
+
         switchLanguageChanger = findViewById(R.id.changeLanguageSwitch);
         changeLanguage();
         adView1 = findViewById(R.id.adView1);
@@ -349,9 +378,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         getPermissions();
         prepareLocationService();
-
-        sharedpreferences = getSharedPreferences(default_area, Context.MODE_PRIVATE);
-        setDefaultArea(resources.getString(R.string.default_area));
 
         fabMic = findViewById(R.id.fabMic);
         progressView = findViewById(R.id.progress);
@@ -404,11 +430,44 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 , Context.BIND_AUTO_CREATE);
 
 
+
+
     }
 
 
+        public void openProfileMenu(View view){
+        drawerLayout.openDrawer(GravityCompat.END);
+        }
 
-    @Override
+        @Override
+        public boolean onNavigationItemSelected(@NonNull @NotNull MenuItem item) {
+
+            // Handle navigation view item clicks here.
+            int id = item.getItemId();
+            if (id == R.id.nav_camera) {
+                Toast.makeText(this, "Item nav_camera", Toast.LENGTH_SHORT).show();
+                // Handle the camera action
+            } else if (id == R.id.nav_gallery) {
+                Toast.makeText(this, "Item nav_gallery", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_slideshow) {
+                Toast.makeText(this, "Item nav_slideshow", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_manage) {
+                Toast.makeText(this, "Item nav_manage", Toast.LENGTH_SHORT).show();
+
+            }else if (id == R.id.app_share) {
+                Toast.makeText(this, "Item app_share", Toast.LENGTH_SHORT).show();
+
+            }
+            else if (id == R.id.location_share) {
+                Toast.makeText(this, "Item location_share", Toast.LENGTH_SHORT).show();
+
+            }
+            return true;
+        }
+
+
+
+        @Override
     protected void onStart() {
         super.onStart();
         PreferenceManager.getDefaultSharedPreferences(this)
@@ -435,7 +494,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                     Log.i(TAG,"Here's the deep link url "+deepLink.toString());
                     String type=deepLink.getQueryParameter("type");
-                    Toast.makeText(MapsActivity.this, ""+type, Toast.LENGTH_SHORT).show();
 
                     if(type==null||type.equals("applink")){
                         return;
@@ -464,6 +522,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }else if(type.equals("realtimelocation")){
                         String id=deepLink.getQueryParameter("userid");
                         if(!id.isEmpty()){
+//                            if(id.equals(fuser.getUid())){TODO: Unblock it
+//                                showMeUserCurrentLoaction();
+//                                return;
+//                            }
                       Intent intent=new Intent(MapsActivity.this,RealTimeViewActivity.class);
                       intent.putExtra("id",id);
                       startActivity(intent);
@@ -553,7 +615,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         commandList.add("calcualte length :- to start calculating length on map");
         commandList.add("developer info :- to get developer information ");
         commandList.add("change map type :- to change map type");
-        commandList.add("close dialog :- to close current view");
+        commandList.add("close/cancel dialog :- to close current view");
         commandList.add("close application :- to close app");
         commandList.add("zoom in :- to zoom in");
         commandList.add("zoom out :- to zoom out");
@@ -584,6 +646,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onPermissionsChecked(MultiplePermissionsReport report) {
                 if (report.areAllPermissionsGranted()) {
+
                 }
 
             }
@@ -698,11 +761,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             new StartSpeechRecognition(MapsActivity.this).listenToUser();
             return;
-        }else if(text.contains("other")){
+        }else if(text.contains("other")||text.contains("option")){
                fabOtherOptions.callOnClick();
         }else if(text.contains("show all command")){
             commandTextView.setVisibility(View.VISIBLE);
-        }else if(text.contains("naviga")||text.contains("search")||text.contains("show")){
+        }else if(text.contains("naviga")||text.contains("search")){
             getTextInfo(text);
         }else if(text.equals("refresh map")){
             Toast.makeText(this, "Map Refreshed", Toast.LENGTH_SHORT).show();
@@ -726,9 +789,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }else if(text.contains("change map")){
             Toast.makeText(this, "Map Type Changed", Toast.LENGTH_SHORT).show();
             changeMap();
-        }else if(text.contains("close dialog")){
+        }else if(text.contains("close dialog")||text.contains("cancel dialog")||
+                  text.contains("dismiss dialog")){
             commandTextView.setVisibility(View.INVISIBLE);
                    removeAllDialog();
+
                    if(mBottomSheetDialog!=null&&mBottomSheetDialog.isShowing()){
                        mBottomSheetDialog.dismiss();
                    }
@@ -788,15 +853,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }else if(text.contains("current location")||text.contains("my location")){
             fabCurrentLocation.callOnClick();
         }
-//        else if(text.contains("open here")){
-//            if(isNavigation) {
-//                startNavigationHere();
-//            }
-//        }else if(text.contains("google map")){
-//            if(isNavigation) {
-//                openInGoogleMaps();
-//            }
-//        }
         else if(text.contains("restart")||text.contains("refresh")){
             removeAllDialog();
             startActivity(new Intent(MapsActivity.this,MapsActivity.class));
@@ -821,7 +877,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void removeAllDialog() {
         for(AlertDialog dialog:dialogList){
-            dialog.dismiss();
+            dialog.cancel();
+
 
         }
     }
@@ -922,11 +979,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void getRealtimeLocationSharePermission() {
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle("Do you want to share your real time location?")
+                .setCancelable(false)
                 .setPositiveButton("yes", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        shareRealTimeLocationLink();
-                        backgroundService.requestLocationUpdates();
+                        getTime();
+
                     }
                 })
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -936,8 +994,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                 })
                 .create();
+
         dialog.show();
         dialogList.add(dialog);
+
+    }
+
+    private void getTime() {
+        TimePickerDialog dialog=new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
+            @Override
+            public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+
+                int millis=((hourOfDay*3600)+(minute*60))*1000;
+                if(millis<50000){
+                    getTime();
+                }else{
+                    shareRealTimeLocationLink();
+                backgroundService.requestLocationUpdates(millis);
+            }
+            }
+        },24,0,true);
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                switchLanguageChanger.setChecked(false);
+            }
+        });
+        dialog.setMessage("Set Timer(in hr)");
+        dialog.setCancelable(false);
+        dialog.show();
+
+
+
 
     }
 
@@ -1034,11 +1122,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         adView2.loadAd(adRequest);
     }
 
-    private void setDefaultArea(String s) {
-        SharedPreferences.Editor editor = sharedpreferences.edit();
-        editor.putString(default_area, s);
-        editor.apply();
-    }
+
 
     private void setSearchTextChangeListener() {
         searchEditText.addTextChangedListener(new TextWatcher() {
@@ -1146,6 +1230,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 e.printStackTrace();
             } catch (IndexOutOfBoundsException exception) {
                 Toast.makeText(MapsActivity.this, resources.getString(R.string.no_place_toast), Toast.LENGTH_SHORT).show();
+                Toast.makeText(MapsActivity.this, resources.getString(R.string.no_place_toast), Toast.LENGTH_SHORT).show();
             }
             // on below line we are getting the location
             // from our list a first position.
@@ -1177,12 +1262,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      * it inside the SupportMapFragment. This method will only be triggered once the user has
      * installed Google Play services and returned to the app.
      */
+
+    @SuppressLint("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         isMapReady = true;
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
-        getRoute();
+        mMap.getUiSettings().setCompassEnabled(false);
+
         speech.startListening(recognizerIntent);
         if (isLocationEnabled(MapsActivity.this)) {
             showMeUserCurrentLoaction();
@@ -1425,7 +1513,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             getPermissions();
         }else{
-            mMap.getUiSettings().setCompassEnabled(false);
+
             mMap.setMyLocationEnabled(true);
            Task<Location> currentLocation=locationProviderClient.getLastLocation();
             currentLocation.addOnSuccessListener(new OnSuccessListener<Location>() {
@@ -1552,11 +1640,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(isMapNumber==1){
             isMapNumber=2;
             mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+            switchLanguageChanger.setTextColor(Color.WHITE);
 
 
         }else{
             isMapNumber=1;
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            switchLanguageChanger.setTextColor(Color.BLACK);
 
         }
         if(mBottomSheetDialog==null){
@@ -1602,6 +1692,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void getWhatUserWantToCalculate() {
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle(resources.getString(R.string.check_calculate_title))
+                .setCancelable(false)
                 .setPositiveButton(resources.getString(R.string.area_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -1617,6 +1708,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }
                 })
                 .create();
+
         dialog.show();
         dialogList.add(dialog);
         
@@ -1681,7 +1773,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 +"\nFeet = "+inFeet);
 
     }
-    private double getRoundValue(double value){
+    public static double getRoundValue(double value){
         DecimalFormat df = new DecimalFormat("###.#");
         return Double.parseDouble(df.format(value));
     }
@@ -1717,15 +1809,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-            public double getDefaultAreaValue(){
-                String s1 = sharedpreferences.getString(default_area, "");
-                return Double.parseDouble(s1);
-            }
+
     private void showAreaToUser(double computeArea) {
 
         areaTextView.setVisibility(View.VISIBLE);
         double inSqMeter=getRoundValue(computeArea);           // 1metre =  3.281 feet
-        double inBiga=getRoundValue((computeArea/getDefaultAreaValue())); // 1 acre = 4,049 sqmetre
+        double inBiga=getRoundValue((computeArea/default_area)); // 1 acre = 4,049 sqmetre
         double inSqFeet=getRoundValue(computeArea*3.281*3.281);
         double inAcres=getRoundValue(computeArea/4049);
         areaTextView.setText(resources.getString(R.string.area_text)+"👇\n"+resources.getString(R.string.bigha_text)+" = "+inBiga+"\nSqMeter = "+inSqMeter
@@ -1820,7 +1909,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             return;
                         }
                         currentRoute = response.body().routes().get(0);
-                        Log.e("route",currentRoute.legs()+"");
+
 
                         if(currentRoute.distance()<2.0){
                             Toast.makeText(MapsActivity.this, "Distance Too Less", Toast.LENGTH_SHORT).show();
@@ -1829,7 +1918,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         NavigationLauncherOptions options = NavigationLauncherOptions.builder()
                                 .directionsRoute(currentRoute)
-                                .shouldSimulateRoute(true)
+                                .shouldSimulateRoute(false)
                                 .build();
 // Call this method with Context from within an Activity
 
@@ -1903,17 +1992,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         loadRewardedInterstitialAds();
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle(resources.getString(R.string.default_area_title))
+                .setCancelable(false)
                 .setMessage(resources.getString(R.string.default_area_message1)+"\n"+resources.getString(R.string.default_area_message2))
                 .setPositiveButton(resources.getString(R.string.yes_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        changeDefaultAreaDialog();
+                        changeDefaultAreaDialog(resources.getString(R.string.change_default_area_message));
                     }
                 })
                 .setNegativeButton(resources.getString(R.string.no_text), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-
+                        default_area= Double.parseDouble(getResources().getString(R.string.default_area));
                     }
                 })
                 .create();
@@ -1921,28 +2011,35 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         dialogList.add(dialog);
     }
 
-    private void changeDefaultAreaDialog() {
+    private void changeDefaultAreaDialog(String message) {
         EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER);
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle(resources.getString(R.string.change_default_area_title))
-                .setMessage(resources.getString(R.string.change_default_area_message))
+                .setMessage(message)
                 .setView(editText)
+                .setCancelable(false)
                 .setPositiveButton(resources.getString(R.string.ok_text), (dialogInterface, i) -> {
 
                     String editTextInput = editText.getText().toString();
-                    double val=Double.parseDouble(editTextInput);
-                    loadInterstialAds();
-                    if(val>=1500 && val<=3500){
-                        setDefaultArea(editTextInput);
-                }else {
-                        Toast.makeText(MapsActivity.this, resources.getString(R.string.change_default_area_toast), Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton(resources.getString(R.string.cancel_text), (dialogInterface, i) -> {
+                    if(editTextInput.isEmpty()){
+                        changeDefaultAreaDialog("Please Give A Value!");
 
+                    }else {
+                        double val = Double.parseDouble(editTextInput);
+                        loadInterstialAds();
+                        if (val >= 1500 && val <= 3500) {
+                           default_area=val;
+                        } else {
+                            changeDefaultAreaDialog(resources.getString(R.string.change_default_area_toast));
+
+                        }
+                    }})
+                .setNegativeButton(resources.getString(R.string.cancel_text), (dialogInterface, i) -> {
+                   default_area= Double.parseDouble(getResources().getString(R.string.default_area));
                 })
                 .create();
+
         dialog.show();
         dialogList.add(dialog);
     }
@@ -2011,11 +2108,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     setMarker();
                 })
                 .create();
+
         dialog.show();
         dialogList.add(dialog);
     }
 
     private void shareRealTimeLocationLink() {
+
+        String link=sharedPreferences.getString("real_time_link","");
+        if(link.isEmpty()){
 
         DynamicLink dynamicLink = FirebaseDynamicLinks.getInstance().createDynamicLink()
                 .setLink(Uri.parse("https://www.themapthing.com/?type=realtimelocation&userid="+fuser.getUid()))
@@ -2034,6 +2135,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             // Short link created
                             Uri shortLink = task.getResult().getShortLink();
                             String link="Real Time Location :- "+shortLink.toString();
+                            sharedPreferences.edit().putString("real_time_link",link).apply();
                             shareLinkToOtherApp(link);
 
                         } else {
@@ -2046,42 +2148,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         Log.e(TAG,"Link Exception = "+e.getMessage());
                     }
                 });
+        }else{
+
+            shareLinkToOtherApp(link);
+        }
     }
 
 
 
     private void shareAppLink() {
+        String link=sharedPreferences.getString("app_link","");
+        if(link.isEmpty()) {
+            DynamicLink dynamicLink = FirebaseDynamicLinks.getInstance().createDynamicLink()
+                    .setLink(Uri.parse("https://www.themapthing.com/?type=applink"))
+                    .setDomainUriPrefix("https://themapthing.page.link")
+                    .setAndroidParameters(
+                            new DynamicLink.AndroidParameters.Builder("com.nsa.mapsspeech")
+                                    .build())
+                    .buildDynamicLink();
+            Task<ShortDynamicLink> shortLinkTask = FirebaseDynamicLinks.getInstance().createDynamicLink()
+                    .setLongLink(dynamicLink.getUri())
+                    .buildShortDynamicLink()
+                    .addOnCompleteListener(this, new OnCompleteListener<ShortDynamicLink>() {
+                        @Override
+                        public void onComplete(@NonNull Task<ShortDynamicLink> task) {
+                            if (task.isSuccessful()) {
+                                // Short link created
+                                Uri shortLink = task.getResult().getShortLink();
+                                String link = "Check out The Map Thing App :- " + shortLink.toString();
+                                sharedPreferences.edit().putString("app_link",link).apply();
+                                shareLinkToOtherApp(link);
 
-        DynamicLink dynamicLink = FirebaseDynamicLinks.getInstance().createDynamicLink()
-                .setLink(Uri.parse("https://www.themapthing.com/?type=applink"))
-                .setDomainUriPrefix("https://themapthing.page.link")
-                .setAndroidParameters(
-                        new DynamicLink.AndroidParameters.Builder("com.nsa.mapsspeech")
-                                .build())
-                .buildDynamicLink();
-        Task<ShortDynamicLink> shortLinkTask = FirebaseDynamicLinks.getInstance().createDynamicLink()
-                .setLongLink(dynamicLink.getUri())
-                .buildShortDynamicLink()
-                .addOnCompleteListener(this, new OnCompleteListener<ShortDynamicLink>() {
-                    @Override
-                    public void onComplete(@NonNull Task<ShortDynamicLink> task) {
-                        if (task.isSuccessful()) {
-                            // Short link created
-                            Uri shortLink = task.getResult().getShortLink();
-                            String link="Check out The Map Thing App :- "+shortLink.toString();
-                            shareLinkToOtherApp(link);
-
-                        } else {
-                            Toast.makeText(MapsActivity.this, "error", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(MapsActivity.this, "error", Toast.LENGTH_SHORT).show();
+                            }
                         }
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull @NotNull Exception e) {
-                        Log.e(TAG,"Link Exception = "+e.getMessage());
-                    }
-                });
-
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull @NotNull Exception e) {
+                            Log.e(TAG, "Link Exception = " + e.getMessage());
+                        }
+                    });
+        }else{
+            shareLinkToOtherApp(link);
+        }
     }
 
     private void setMarker() {
@@ -2155,9 +2265,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void shareLocationIntent(String type) {
-
-//        String uri="https://www.google.com/maps/dir/?api=1&destination="+shareLocation.latitude+"%2C"+shareLocation.longitude;
-
 
         DynamicLink dynamicLink = FirebaseDynamicLinks.getInstance().createDynamicLink()
                 .setLink(Uri.parse("https://www.themapthing.com/?type="+type+"&lat="+shareLocation.latitude+"&lng="+shareLocation.longitude))
@@ -2258,6 +2365,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             selectPlaceTextView.setVisibility(View.INVISIBLE);
         }
     }
+
+    public void addOnMap(View view) {
+        startActivity(new Intent(MapsActivity.this,AddOnMap.class));
+    }
+
+   public static Cryptore getCryptore(Context context, String alias) throws Exception {
+        Cryptore.Builder builder = new Cryptore.Builder(alias, CipherAlgorithm.RSA);
+        builder.setContext(context); //Need Only RSA on below API Lv22.
+    builder.setBlockMode(BlockMode.ECB); //If Needed.
+    builder.setEncryptionPadding(EncryptionPadding.RSA_PKCS1); //If Needed.
+        return builder.build();
+    }
+
+    public static String encrypt(String plainStr) throws Exception {
+
+        byte[] plainByte = plainStr.getBytes();
+        EncryptResult result = getCryptore(getInstance(),fuser.getUid()).encrypt(plainByte);
+        return Base64.encodeToString(result.getBytes(), Base64.DEFAULT);
+    }
+    public static String decrypt(String encryptedStr,String id) throws Exception {
+
+        byte[] encryptedByte = Base64.decode(encryptedStr, Base64.DEFAULT);
+        DecryptResult result = getCryptore(getInstance(),id).decrypt(encryptedByte, null);
+        return new String(result.getBytes());
+    }
+    
+
+
 
 
 }

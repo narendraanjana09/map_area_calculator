@@ -13,11 +13,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.location.Location;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Build;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
@@ -38,9 +39,12 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.nsa.mapsspeech.Activities.MapsActivity;
 import com.nsa.mapsspeech.ExtraClasses.FireBase;
-import com.nsa.mapsspeech.Model.LocationModel;
+import com.nsa.mapsspeech.Model.RealTimeLocationModel;
 import com.nsa.mapsspeech.R;
 
+import javax.crypto.SecretKey;
+
+import static com.nsa.mapsspeech.Activities.MapsActivity.encrypt;
 import static com.nsa.mapsspeech.Activities.MapsActivity.fuser;
 
 
@@ -50,6 +54,7 @@ public class BackgroundService extends Service {
             ".started_from_notification";
     private static final String TAG ="BackGroundService" ;
   private final IBinder mbinder = new LocalBinder();
+  private int millis=0;
 
     private static final String CHANNEL_ID = "my_channel";
     private static final long UPDATE_INTERVAL_IN_MIL = 3000;
@@ -68,7 +73,7 @@ public class BackgroundService extends Service {
     private boolean isBatteryCharging;
     private BroadcastReceiver mReceiver;
     private DatabaseReference referenceLocation=new FireBase().getReferenceLocationUpdate();
-    LocationModel locationModel;
+    RealTimeLocationModel realTimeLocationModel;
 
     public BackgroundService() {
     }
@@ -96,39 +101,70 @@ public class BackgroundService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel mChannel=new NotificationChannel(CHANNEL_ID,
                     getString(R.string.app_name),
-                    NotificationManager.IMPORTANCE_HIGH);
+                    NotificationManager.IMPORTANCE_DEFAULT);
             notificationManager.createNotificationChannel(mChannel);
         }
-
     }
 
+    String count="\n";
+    CountDownTimer timer;
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+
 
 
         boolean startedFromNotification= intent.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION,false);
         Log.e("Bind","onStartCommand "+startedFromNotification);
         if(startedFromNotification){
+
+
             removeLocationUpdates();
             stopSelf();
         }
 
         if(com.nsa.mapsspeech.Services.Common.requestingLocationUpdates(this)){
+
+
             startForeground(NOTI_ID,getNotification());
+
         }
         return START_NOT_STICKY;
     }
 
+    private String getHrAndMinutesText(int millis) {
 
+        int hr=0,min=0,sec=0;
+        if(millis>3600000){
+            hr=millis/3600000;
+            millis=millis%3600000;
+        }
+        if(millis>60000){
+            min=millis/60000;
+            millis=millis%60000;
+        }
+        if(millis>1000){
+            sec=millis/1000;
+
+        }
+        if(hr==0&&min==0){
+            return sec+"";
+        }else if(hr==0){
+            return min+":"+sec;
+        }else{
+        return  hr+":"+min+":"+sec;
+    }
+    }
 
 
     public void removeLocationUpdates() {
         try{
-            locationModel=new LocationModel(mLocation.getLatitude()+"",mLocation.getLongitude()+"",
-                    "off",mLocation.getSpeed()+"",batteryLevel+"",isBatteryCharging);
-            referenceLocation.child(fuser.getUid())
-                    .setValue(locationModel);
 
+
+           millis=0;
+            if(timer!=null)
+           timer.cancel();
+            referenceLocation.child(fuser.getUid()).removeValue();
             fusedLocationProviderClient.removeLocationUpdates(locationCallback);
             com.nsa.mapsspeech.Services.Common.setRequestLocationUpdates(this,false);
             stopForeground(true);
@@ -183,10 +219,16 @@ public class BackgroundService extends Service {
     private void onNewLocation(Location lastLocation) {
         mLocation=lastLocation;
         if(mLocation!=null){
-            locationModel=new LocationModel(mLocation.getLatitude()+"",mLocation.getLongitude()+"",
+            String location=mLocation.getLatitude()+","+mLocation.getLongitude();
+            try {
+                location=encrypt(location);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            realTimeLocationModel =new RealTimeLocationModel(location,
                                 "on",mLocation.getSpeed()+"",batteryLevel+"",isBatteryCharging);
                         referenceLocation.child(fuser.getUid())
-                    .setValue(locationModel);
+                    .setValue(realTimeLocationModel);
         }
 
 //        if(serviceIsRunningInForeground(this)){
@@ -196,21 +238,18 @@ public class BackgroundService extends Service {
 
     private Notification getNotification() {
         Intent intent=new Intent(this,BackgroundService.class);
-        String text= com.nsa.mapsspeech.Services.Common.getLocationText(mLocation);
+        String text= com.nsa.mapsspeech.Services.Common.getLocationText(count);
         intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION,true);
         PendingIntent servicePendingIntent=PendingIntent.getService(this,0,intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent activityPendingIntent=PendingIntent.getActivity(this,0,
                 new Intent(this, MapsActivity.class),0);
-
         NotificationCompat.Builder builder=new NotificationCompat.Builder(this)
                 .addAction(R.drawable.launch,"Launch",activityPendingIntent)
                 .addAction(R.drawable.close_icon,"Remove",servicePendingIntent)
                 .setContentText(text)
                 .setContentTitle(com.nsa.mapsspeech.Services.Common.getLocationTitle(this))
                 .setOngoing(true)
-                .setNotificationSilent()
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setTicker(text)
                 .setWhen(System.currentTimeMillis());
@@ -252,17 +291,21 @@ public class BackgroundService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-
+        Log.e("Bind","onUnbind");
         return true;
     }
 
     @Override
     public void onDestroy() {
         Log.e("Bind","onDestroy");
+        removeLocationUpdates();
+        if(timer!=null)
+        timer.cancel();
         super.onDestroy();
     }
 
-    public void requestLocationUpdates() {
+    public void requestLocationUpdates(int millis) {
+
 
         com.nsa.mapsspeech.Services.Common.setRequestLocationUpdates(this,true);
         startService(new Intent(getApplicationContext(),BackgroundService.class));
@@ -270,6 +313,22 @@ public class BackgroundService extends Service {
             mReceiver = new BatteryBroadcastReceiver();
             registerReceiver(mReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             fusedLocationProviderClient.requestLocationUpdates(locationRequest,locationCallback, Looper.myLooper());
+            this.millis=millis;
+            timer= new CountDownTimer(millis, 1000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+
+                    count="\nTime Remaining:- "+getHrAndMinutesText((int) millisUntilFinished);
+                    notificationManager.notify(NOTI_ID,getNotification());
+                }
+
+                @Override
+                public void onFinish() {
+                    stopForeground(true);
+                    removeLocationUpdates();
+                }
+            }.start();
+
         }catch (SecurityException ex){
 
             Log.e(TAG,"lost location permission could not request it "+ex);

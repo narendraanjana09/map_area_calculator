@@ -1,8 +1,6 @@
 package com.nsa.mapsspeech.Activities;
 
-import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -10,6 +8,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -33,7 +32,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.CompoundButton;
 import android.widget.Switch;
@@ -52,7 +50,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -72,7 +69,7 @@ import com.nsa.mapsspeech.Directions.DirectionHelper;
 import com.nsa.mapsspeech.Directions.DirectionPointListener;
 import com.nsa.mapsspeech.Directions.GetPathFromLocation;
 import com.nsa.mapsspeech.ExtraClasses.FireBase;
-import com.nsa.mapsspeech.Model.LocationModel;
+import com.nsa.mapsspeech.Model.RealTimeLocationModel;
 import com.nsa.mapsspeech.Model.UserDataModel;
 import com.nsa.mapsspeech.R;
 import com.squareup.picasso.Picasso;
@@ -88,30 +85,36 @@ import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
+import static com.nsa.mapsspeech.Activities.MapsActivity.decrypt;
+
 public class RealTimeViewActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     private String id = null;
     Marker mylocationMarker= null,userLocationMarker=null;
+    MarkerOptions optionsGrey=null,optionsBlue=null;
     TextView batteryLevelTV, speedTV, statusTV, dataTV;
+    boolean animateCameraProjection=false;
 
     LatLng myLocation = null, userLocation = null;
     private FusedLocationProviderClient locationProviderClient;
-    FloatingActionButton fabStartNav,fabCloseNav;
+    FloatingActionButton fabStartNav,fabCloseNav,fabPlaynav;
     private boolean mapTypeChanged = false;
     Switch switchOnOff;
     private boolean follow = false;
     private String TAG = "RealTimeActivity";
     private Polyline routePloyline=null,currentPolyline=null;
     List<LatLng> currentList=null;
-    private CountDownTimer timer;
+
     public static JSONArray jLegs=null;
     public static JSONArray jSteps=null;
     public static String routeData=null;
     private String string="";
-    SharedPreferences sharedpreferences;
     String jLegsArray = "jLegs";
     String jStepsArray = "jLegs";
+    TextView timerTV,mySpeedTV;
+    SharedPreferences prefs;
+    LatLng tractEndLastLocation=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,34 +134,69 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         speedTV = findViewById(R.id.speedTextView);
         statusTV = findViewById(R.id.statusTextView);
         switchOnOff = findViewById(R.id.switchOnOff);
+        timerTV=findViewById(R.id.timerTextView);
+        mySpeedTV=findViewById(R.id.mySpeedTextView);
+
+        prefs= getSharedPreferences("counter", MODE_PRIVATE);
+        String counter=prefs.getString("saved_counter", "");
+
+        String lat=prefs.getString("last_location_lat","");
+        String lng=prefs.getString("last_location_lng","");
+        Log.e(TAG,"Last location "+lat+lng);
+        if(!(lat.isEmpty()||lng.isEmpty())){
+            tractEndLastLocation=new LatLng(Double.valueOf(lat),Double.valueOf(lng));
+        }
+        Log.e(TAG,"Last tractEndLastLocation "+tractEndLastLocation);
+
+      Log.e(TAG,"saved counter"+counter);
+      if(!(counter.isEmpty())){
+        //  startTimer(Integer.parseInt(counter)*1000);
+          startTimer(0);
+      }
+
         fabCloseNav=findViewById(R.id.fabNavigationCancel);
+        fabPlaynav=findViewById(R.id.fabStartPausedNaviagtion);
         fabStartNav=findViewById(R.id.fabNavigationStart);
         dataTV = findViewById(R.id.data);
         Drawable img = speedTV.getContext().getResources().getDrawable(R.drawable.speed);
         speedTV.setCompoundDrawablesWithIntrinsicBounds(img, null, null, null);
+        mySpeedTV.setCompoundDrawablesWithIntrinsicBounds(img, null, null, null);
 
 
-        batteryLevelTV.setText("50");
-        speedTV.setText(1200 + "");
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
+
+
         switchOnOff.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     switchOnOff.setText("on");
                     follow = true;
+                    animateCameraProjection=false;
 
 
                 } else {
                     switchOnOff.setText("off");
+                    animateCameraProjection=true;
                     follow = false;
                 }
             }
         });
 
+    }
+
+    private void getMarkersWithColor() {
+        MarkerOptions markerOptions = new MarkerOptions().position(myLocation)
+                .anchor(0.5f, 0.5f)
+                .icon(  BitmapDescriptorFactory.fromBitmap(
+                        createCustomMarker(RealTimeViewActivity.this,
+                                getResources().getDrawable(R.drawable.naviagtion_plane_light_blue ))));
+       optionsBlue=markerOptions;
     }
 
     /**
@@ -212,6 +250,24 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             }
         });
 
+        mMap.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
+            @Override
+            public void onCameraMoveStarted(int i) {
+                if(i==REASON_GESTURE){
+                    animateCameraProjection=false;
+                    if(fabStartNav.getVisibility()==View.INVISIBLE){
+                        if(fabCloseNav.getVisibility()==View.VISIBLE){
+                        fabPlaynav.setVisibility(View.VISIBLE);
+                        }
+                    }
+
+                }
+
+            }
+        });
+
+
+
     }
 
     private void createDriveMarker() {
@@ -219,20 +275,23 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 .anchor(0.5f, 0.5f)
                 .icon(  BitmapDescriptorFactory.fromBitmap(
                         createCustomMarker(RealTimeViewActivity.this,
-                                getResources().getDrawable(R.drawable.navigation_black ))));
+                                getResources().getDrawable(R.drawable.naviagtion_plane_grey ))));
          mylocationMarker = mMap.addMarker(markerOptions);
+         optionsGrey=markerOptions;
          mylocationMarker.setVisible(false);
-         mylocationMarker.setFlat(true);
+
 
     }
 
     @SuppressLint("MissingPermission")
     private void mapUISettings(boolean b) {
         if(b){
+            mapUiSettings=false;
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(true);
             mMap.getUiSettings().setCompassEnabled(true);
         }else{
+            mapUiSettings=true;
             mMap.setMyLocationEnabled(false);
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
             mMap.getUiSettings().setCompassEnabled(false);
@@ -262,6 +321,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                             LatLng latLng=new LatLng(location.getLatitude(),location.getLongitude());
                             myLocation =latLng;
                             createDriveMarker();
+                            getMarkersWithColor();
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(myLocation, 13));
                     Toast.makeText(RealTimeViewActivity.this, "My Location = " + myLocation, Toast.LENGTH_SHORT).show();
                         }
@@ -291,9 +351,17 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         mLocationRequest.setInterval(3000);
         mLocationRequest.setFastestInterval(1000);
             if(b){
-        locationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+                locationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+                if(myLocation!=null){
+                mylocationMarker.setVisible(true);
+                    locationProviderClient.requestLocationUpdates(mLocationRequest, null,null);
 
-        locationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+                }else{
+                    locationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+                }
+
+
+
     }else{
                 locationProviderClient.removeLocationUpdates(mLocationCallback).addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
@@ -303,18 +371,40 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 });
             }
     }
-
+     LatLng lastLocation=null;
     private LocationCallback mLocationCallback = new LocationCallback() {
 
         @Override
         public void onLocationResult(LocationResult locationResult) {
             Location location = locationResult.getLastLocation();
+            double speed=location.getSpeed();
+            speed*=3.4;
+            mySpeedTV.setText((int)speed+" km/hr");
             LatLng latLng=new LatLng(location.getLatitude(),location.getLongitude());
-            myLocation=latLng;
+
+            if(lastLocation==null){
+                lastLocation=latLng;
+                myLocation=latLng;
+            }else{
+                lastLocation=myLocation;
+                myLocation=latLng;
+            }
+            float bearing=getBearing(lastLocation,myLocation);
+            mylocationMarker.setRotation(bearing);
+
             animateMarker(mylocationMarker,myLocation);
+
+
+            if(animateCameraProjection){
+                if(follow){
+                    switchOnOff.setChecked(false);
+                }
+                upDatecamera(myLocation,90,16,bearing);
+            }
             Log.e("locationCallback", "call back "+latLng);
-        }
-    };
+        }};
+
+
 
     // method to check for permissions
     private boolean checkPermissions() {
@@ -354,12 +444,18 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             @Override
             public void onDataChange(@NonNull @NotNull DataSnapshot snapshot) {
                 if (snapshot != null) {
-                    LocationModel locationModel = snapshot.getValue(LocationModel.class);
+                    RealTimeLocationModel realTimeLocationModel = snapshot.getValue(RealTimeLocationModel.class);
 
-                    changeOtherUnits(locationModel);
-                    LatLng latLng = new LatLng(Double.parseDouble(locationModel.getLat()),
-                            Double.parseDouble(locationModel.getLng()));
-                    userLocation = latLng;
+                    if(realTimeLocationModel==null){
+                        Toast.makeText(RealTimeViewActivity.this, "Location Deleted", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+
+
+                    }
+                    changeOtherUnits(realTimeLocationModel);
+
+                    userLocation = getEncryptedLatLng(realTimeLocationModel);
                     if (!markerCreated) {
                         createCustomMarkerForUrl(RealTimeViewActivity.this,model);
                         markerCreated = true;
@@ -368,32 +464,58 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                     }
 
 
+                }else{
+                    Toast.makeText(RealTimeViewActivity.this, "Location Deleted", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
                 }
 
             }
 
             @Override
             public void onCancelled(@NonNull @NotNull DatabaseError error) {
-
+                Log.e(TAG,error.toString());
+                Toast.makeText(RealTimeViewActivity.this, "Server Error Try Again Later!", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
             }
         });
     }
 
+    private LatLng getEncryptedLatLng(RealTimeLocationModel realTimeLocationModel) {
+        String location="";
+        try {
+            location=decrypt(realTimeLocationModel.getLocation(),id);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-    private void changeOtherUnits(LocationModel locationModel) {
 
-        String status = locationModel.getStatus();
+        if(location.isEmpty()){
+            location=realTimeLocationModel.getLocation();
+        }
+        String locationParts[]= location.split(",");
+        LatLng latLng = new LatLng(Double.parseDouble(locationParts[0]),
+                    Double.parseDouble(locationParts[1]));
+
+      return latLng;
+    }
+
+
+    private void changeOtherUnits(RealTimeLocationModel realTimeLocationModel) {
+
+        String status = realTimeLocationModel.getStatus();
         statusTV.setText(status);
-        double speedInKm = (Double.parseDouble(locationModel.getSpeed())) * 3.6;
-        speedTV.setText((int) speedInKm + "km/hr");
-        int battryLevel = Integer.parseInt(locationModel.getChargingLevel());
+        double speedInKm = (Double.parseDouble(realTimeLocationModel.getSpeed())) * 3.6;
+        speedTV.setText((int) speedInKm + " km/hr");
+        int battryLevel = Integer.parseInt(realTimeLocationModel.getChargingLevel());
         batteryLevelTV.setText(battryLevel + "%");
         if (battryLevel < 20) {
             Drawable img = batteryLevelTV.getContext().getResources().getDrawable(R.drawable.batter_low);
             batteryLevelTV.setCompoundDrawablesWithIntrinsicBounds(img, null, null, null);
 
         }
-        if (locationModel.isCharging()) {
+        if (realTimeLocationModel.isCharging()) {
 
             Drawable img = batteryLevelTV.getContext().getResources().getDrawable(R.drawable.battery_charging);
             batteryLevelTV.setCompoundDrawablesWithIntrinsicBounds(img, null, null, null);
@@ -420,37 +542,45 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
     }
 
     public void animateMarker(Marker marker,final LatLng toPosition) {
-        final Handler handler = new Handler();
-        final long start = SystemClock.uptimeMillis();
-        Projection proj = mMap.getProjection();
-        Point startPoint = proj.toScreenLocation(marker.getPosition());
-        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
-        final long duration = 500;
+        try {
+            final Handler handler = new Handler();
+            final long start = SystemClock.uptimeMillis();
+            Projection proj = mMap.getProjection();
+            Point startPoint = proj.toScreenLocation(marker.getPosition());
+            final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+            final long duration = 500;
 
-        final LinearInterpolator interpolator = new LinearInterpolator();
+            final LinearInterpolator interpolator = new LinearInterpolator();
 
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                long elapsed = SystemClock.uptimeMillis() - start;
-                float t = interpolator.getInterpolation((float) elapsed
-                        / duration);
-                double lng = t * toPosition.longitude + (1 - t)
-                        * startLatLng.longitude;
-                double lat = t * toPosition.latitude + (1 - t)
-                        * startLatLng.latitude;
-                marker.setPosition(new LatLng(lat, lng));
-                if (follow) {
-                    CameraUpdate update = CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 19);
-                    mMap.animateCamera(update);
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                    long elapsed = SystemClock.uptimeMillis() - start;
+                    float t = interpolator.getInterpolation((float) elapsed
+                            / duration);
+                    double lng = t * toPosition.longitude + (1 - t)
+                            * startLatLng.longitude;
+                    double lat = t * toPosition.latitude + (1 - t)
+                            * startLatLng.latitude;
+                    marker.setPosition(new LatLng(lat, lng));
+                    if (follow) {
+                        CameraUpdate update = CameraUpdateFactory.newLatLngZoom(new LatLng(lat, lng), 19);
+                        mMap.animateCamera(update);
+                    }
+                    if (t < 1.0) {
+                        // Post again 16ms later.
+                        handler.postDelayed(this, 16);
+
+                    }
+                } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-                if (t < 1.0) {
-                    // Post again 16ms later.
-                    handler.postDelayed(this, 16);
-
-                }
-            }
-        });
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void createCustomMarkerForUrl(Context context,UserDataModel model) {
@@ -496,6 +626,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         MarkerOptions markerOptions = new MarkerOptions().position(userLocation)
                 .anchor(0.5f, 0.5f)
                 .title(model.getName())
+                .snippet(model.getName())
                 .icon(BitmapDescriptorFactory.fromBitmap(bitmap));
         userLocationMarker = mMap.addMarker(markerOptions);
         Log.e("Uponmarker","Marker  added for profile");
@@ -507,7 +638,6 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 
         CircleImageView markerImage = (CircleImageView) marker.findViewById(R.id.user_dp);
         markerImage.setImageDrawable(drawable);
-        markerImage.setRotation(-45);
         DisplayMetrics displayMetrics = new DisplayMetrics();
         ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         marker.setLayoutParams(new ViewGroup.LayoutParams(52, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -532,18 +662,58 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 
     public void changeMapType(View view) {
         changeDrawable(mapTypeChanged);
+
         if (mapTypeChanged) {
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             batteryLevelTV.setTextColor(getResources().getColor(R.color.black));
             speedTV.setTextColor(getResources().getColor(R.color.black));
+            mySpeedTV.setTextColor(getResources().getColor(R.color.black));
             statusTV.setTextColor(getResources().getColor(R.color.black));
+            dataTV.setTextColor(getResources().getColor(R.color.black));
+            switchOnOff.setTextColor(getResources().getColor(R.color.black));
             mapTypeChanged = false;
         } else {
             batteryLevelTV.setTextColor(getResources().getColor(R.color.white));
             speedTV.setTextColor(getResources().getColor(R.color.white));
+            mySpeedTV.setTextColor(getResources().getColor(R.color.white));
             statusTV.setTextColor(getResources().getColor(R.color.white));
+            dataTV.setTextColor(getResources().getColor(R.color.white));
+            switchOnOff.setTextColor(getResources().getColor(R.color.white));
             mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
             mapTypeChanged = true;
+        }
+        if(mapUiSettings){
+        changeMapElementsColor(mapTypeChanged);
+    }
+    }
+
+
+    private void changeMapElementsColor(boolean mapTypeChanged) {
+        if(mapTypeChanged){
+            //sattelite
+
+            if(routePloyline!=null){
+                routePloyline.setColor(getResources().getColor(R.color.light_blue));
+            }
+            mylocationMarker.remove();
+            mylocationMarker=mMap.addMarker(optionsGrey.position(myLocation));
+
+
+
+
+        }else{
+            //normal
+            if(routePloyline!=null){
+                routePloyline.setColor(getResources().getColor(R.color.dark_grey));
+            }
+            mylocationMarker.remove();
+            mylocationMarker=mMap.addMarker(optionsBlue.position(myLocation));
+
+        }
+        if(animateCameraProjection) {
+
+            mylocationMarker.setVisible(true);
+            mylocationMarker.setFlat(true);
         }
     }
 
@@ -572,6 +742,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             batteryLevelTV.setCompoundDrawables(battery, null, null, null);
             DrawableCompat.setTint(speed, getResources().getColor(R.color.black));
             speedTV.setCompoundDrawables(speed, null, null, null);
+            mySpeedTV.setCompoundDrawables(speed, null, null, null);
             DrawableCompat.setTint(status, getResources().getColor(R.color.black));
             statusTV.setCompoundDrawables(status, null, null, null);
         } else {
@@ -579,156 +750,131 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             batteryLevelTV.setCompoundDrawables(battery, null, null, null);
             DrawableCompat.setTint(speed, getResources().getColor(R.color.white));
             speedTV.setCompoundDrawables(speed, null, null, null);
+            mySpeedTV.setCompoundDrawables(speed, null, null, null);
             DrawableCompat.setTint(status, getResources().getColor(R.color.white));
             statusTV.setCompoundDrawables(status, null, null, null);
         }
     }
 
+    int count=0;
     public void getRoute() {
-        SharedPreferences sh = getSharedPreferences("MySharedPref", MODE_PRIVATE);
-        String route = sh.getString("route", "");
-        if(route.isEmpty()){
-            Log.e(TAG,"route not exist");
+
+        if(!(count<2)){
+            Toast.makeText(this, "You Can Update Route After 2 minutes!", Toast.LENGTH_SHORT).show();
+            return;
+        }
            if(userLocation==null){
                Toast.makeText(this, "User Location Null", Toast.LENGTH_SHORT).show();
                return;
            }
+
+           if(tractEndLastLocation!=null){
+               Log.e(TAG,"track location is null");
+               if(userLocation.latitude==tractEndLastLocation.latitude&&
+                       userLocation.longitude==tractEndLastLocation.longitude){
+                   routeData=prefs.getString("route_data","");
+                   routePloyline=mMap.addPolyline(getSavedRoute(routeData));
+                   fabStartNav.setVisibility(View.VISIBLE);
+                   if(jLegs!=null){
+                       getRouteDetails();
+                   }
+                   Log.e(TAG,"Last location is same");
+                   return;
+               }
+           }
+           prefs.edit().putString("last_location_lat",userLocation.latitude+"").apply();
+        prefs.edit().putString("last_location_lng",userLocation.longitude+"").apply();
+
         new GetPathFromLocation(myLocation, userLocation, new DirectionPointListener() {
             @Override
             public void onPath(PolylineOptions polyLine) {
 
+                if(routePloyline!=null){
+                    routePloyline.remove();
+                }
+
                 routePloyline=mMap.addPolyline(polyLine);
+                if(mapTypeChanged){
+                    routePloyline.setColor(getResources().getColor(R.color.light_blue));
+                }else{
+                    routePloyline.setColor(getResources().getColor(R.color.dark_grey));
+                }
+
+                if(routeData!=null){
+                    prefs.edit().putString("route_data",routeData).apply();
+                }
                 fabStartNav.setVisibility(View.VISIBLE);
-                saveDataToSp();
+                Toast.makeText(RealTimeViewActivity.this, "Route Available", Toast.LENGTH_SHORT).show();
+                startTimer(120000);
                 if(jLegs!=null){
-                    try{
-                    JSONObject legsObjects = jLegs.getJSONObject(0);
-                    JSONObject distanceObject = legsObjects.getJSONObject("distance");
-                    String distance = distanceObject.getString("text");
-
-                    JSONObject time = legsObjects.getJSONObject("duration");
-                    String duration = time.getString("text");
-
-                    String startAddress = legsObjects.getString("start_address");
-                    String endAddress = legsObjects.getString("end_address");
-                    String text="Start Address = "+startAddress+"\n"
-                            +"End Address = "+endAddress+"\n"
-                            +"Total Distance = "+distance+"\n"
-                            +"Total Duration = "+duration;
-                        string=text;
-                    dataTV.setText(string);
-
-                } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+                    getRouteDetails();
 
                 }
-                if(jSteps!=null){
-
-                }
-
-
             }
         }).execute();
-        }else{
-            Log.e(TAG,"route exist");
-              routeData=route;
 
-            routePloyline=mMap.addPolyline(getSavedRoute(route));
-            fabStartNav.setVisibility(View.VISIBLE);
-                try{
-                    JSONObject legsObjects = jLegs.getJSONObject(0);
-                    JSONObject distanceObject = legsObjects.getJSONObject("distance");
-                    String distance = distanceObject.getString("text");
 
-                    JSONObject time = legsObjects.getJSONObject("duration");
-                    String duration = time.getString("text");
 
-                    String startAddress = legsObjects.getString("start_address");
-                    String endAddress = legsObjects.getString("end_address");
-                    String text="Start Address = "+startAddress+"\n"
-                            +"End Address = "+endAddress+"\n"
-                            +"Total Distance = "+distance+"\n"
-                            +"Total Duration = "+duration;
-                    string=text;
-                    dataTV.setText(string);
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
 
 
     }
-    }
 
-    private void saveDataToSp() {
+    private void getRouteDetails() {
+        try{
+        JSONObject legsObjects = jLegs.getJSONObject(0);
+        JSONObject distanceObject = legsObjects.getJSONObject("distance");
+        String distance = distanceObject.getString("text");
 
+        JSONObject time = legsObjects.getJSONObject("duration");
+        String duration = time.getString("text");
 
-        SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref",MODE_PRIVATE);
+        String startAddress = legsObjects.getString("start_address");
+        String endAddress = legsObjects.getString("end_address");
+        String text="Start Address = "+startAddress+"\n"
+                +"End Address = "+endAddress+"\n"
+                +"Total Distance = "+distance+"\n"
+                +"Total Duration = "+duration;
+            string=text;
+        dataTV.setText(string);
 
-
-        SharedPreferences.Editor myEdit = sharedPreferences.edit();
-
-        if(routeData!=null){
-            myEdit.putString("route", routeData);
-            Log.e(TAG,"route saved");
-        }else{
-            Log.e(TAG,"route not saved");
+    } catch (JSONException e) {
+            e.printStackTrace();
         }
-        myEdit.commit();
     }
 
-    private void startMovingOnPolyline() {
-        mylocationMarker.setVisible(true);
-        List<LatLng> list=routePloyline.getPoints();
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy: called");
+        //Your code
 
+    }
 
-        int size=list.size();
+    private void startTimer(int time) {
 
-
-        timer=new CountDownTimer(size*1000,500 ) {
-            int count=0;
-
-            LatLng oldLocation, newLocation;
-
+        new CountDownTimer(time,1000){
 
             @Override
             public void onTick(long millisUntilFinished) {
+                count=(int)(millisUntilFinished/1000);
+                if(count>30){
+                    prefs.edit()
+                            .putString("saved_counter", count+"").apply();
+                }
 
-
-                if(list.size()==count){
-                    this.cancel();
-                }else{
-
-                    oldLocation=list.get(count);
-                    newLocation=list.get(count++);
-                    if(currentPolyline==null){
-                        checkPath(newLocation);
-
-                    }else{
-                        if(currentList!=null) {
-
-                        }
-
-                    }
-
-                animateMarker(mylocationMarker,newLocation);
-
-                    float bearing = getBearing(oldLocation, newLocation);
-                 //   upDatecamera(newLocation,90,10,bearing);
-                    mylocationMarker.setRotation(bearing);
-
-
-//                Log.e("count",count+"");
-            }}
+                timerTV.setText(count+"");
+                Log.e(TAG,"count = "+count);
+            }
 
             @Override
             public void onFinish() {
+                count=0;
+                timerTV.setText("");
 
             }
-        };
-
+        }.start();
     }
+
 
     private void checkPath(LatLng newLocation) {
         try{
@@ -746,12 +892,12 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 
                 JSONObject distanceObject = step.getJSONObject("distance");
                 JSONObject durationObject = step.getJSONObject("duration");
-
+                String instruction=step.getString("html_instructions");
                 String distance = distanceObject.getString("text");
                 String duration = durationObject.getString("text");
-                String text="Distance "+distance+"\n"+"Duration = "+duration;
+                String text="Distance "+distance+"\n"+"Duration = "+duration+"\n"+instruction;
                 dataTV.setText(string+"\n"+text);
-             // Log.e(TAG,text);
+
 
 
                 JSONObject polyline = step.getJSONObject("polyline");
@@ -773,29 +919,33 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         }
     }
 
-    private void upDatecamera(LatLng userPosition,float tilt,float zoom, float bearing ){
+    private void upDatecamera(LatLng userPosition,float tilt,float zoom, float bearing ) {
 
-        LatLng mapCenter = userPosition;
-        Projection projection = mMap.getProjection();
-        Point centerPoint = projection.toScreenLocation(mapCenter);
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        int displayHeight = displayMetrics.heightPixels;
-
-        centerPoint.y = centerPoint.y - (int) (displayHeight / 5);
-
-        LatLng newCenterPoint = projection.fromScreenLocation(centerPoint);
+//        LatLng mapCenter = userPosition;
+//        Projection projection = mMap.getProjection();
+//        Point centerPoint = projection.toScreenLocation(mapCenter);
+//
+//        DisplayMetrics displayMetrics = new DisplayMetrics();
+//        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+//        int displayHeight = displayMetrics.heightPixels;
+//
+//        centerPoint.y = centerPoint.y - (int) (displayHeight / 5);
+//
+//        LatLng newCenterPoint = projection.fromScreenLocation(centerPoint);
 
 //        mMap.animateCamera(CameraUpdateFactory.newLatLng(newCenterPoint));
-        CameraPosition cameraPosition = new CameraPosition.Builder()
-                .target(newCenterPoint)
-                .tilt(tilt)
-                .zoom(zoom)
-                .bearing(bearing)
-                .build();
-        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+        try {
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(myLocation)
+                    .tilt(tilt)
+                    .zoom(zoom)
+                    .bearing(bearing)
+                    .build();
 
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 500, null);
+    } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     private float getBearing(LatLng begin, LatLng end) {
         double dLon = (end.longitude - begin.longitude);
@@ -806,21 +956,39 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         return (float) bearing;
     }
     public void getWay(View view) {
-        getRoute();
+        AlertDialog dialog = new AlertDialog.Builder(RealTimeViewActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
+                .setTitle("Get route plan!")
+                .setPositiveButton("Here", (dialogInterface, i) -> {
+                    getRoute();
+                })
+                .setNegativeButton("Google Maps", (dialogInterface, i) -> {
+                    openInGoogleMaps();
+                     })
+                .create();
+        dialog.show();
+
 
     }
 
-
+    private void openInGoogleMaps() {
+        Uri gmmIntentUri = Uri.parse("google.navigation:q="+userLocation.latitude+","+userLocation.longitude);
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);
+    }
+    boolean mapUiSettings=false;
     public void startNaviagtion(View view) {
 
         if(routePloyline!=null) {
-            mapUISettings(false);
+            mapUISettings(mapUiSettings);
+            mMap.animateCamera(CameraUpdateFactory.newLatLng(myLocation));
             fabStartNav.setVisibility(View.INVISIBLE);
             fabCloseNav.setVisibility(View.VISIBLE);
-          //  requestNewLocationData(true);
-            mylocationMarker.setVisible(true);
-            startMovingOnPolyline();
-            timer.start();
+            fabPlaynav.setVisibility(View.INVISIBLE);
+            requestNewLocationData(true);
+            animateCameraProjection=true;
+            changeMapElementsColor(mapTypeChanged);
+
         }else{
             Toast.makeText(this, "Get Route First", Toast.LENGTH_SHORT).show();
         }
@@ -831,9 +999,12 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
     public void cancelNavigation(View view) {
         mapUISettings(true);
         fabStartNav.setVisibility(View.VISIBLE);
+        fabPlaynav.setVisibility(View.INVISIBLE);
         fabCloseNav.setVisibility(View.INVISIBLE);
-      //  requestNewLocationData(false);
-        timer.cancel();
+        mylocationMarker.setVisible(false);
+        animateCameraProjection=false;
+        requestNewLocationData(false);
+
     }
 
     private PolylineOptions getSavedRoute(String data){
@@ -898,4 +1069,16 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 }
 
 
+    public void playNaviagtion(View view) {
+        if(!animateCameraProjection){
+            mMap.animateCamera(CameraUpdateFactory.newLatLng(myLocation));
+        animateCameraProjection=true;
+        fabPlaynav.setVisibility(View.INVISIBLE);
+    }else{
+            requestNewLocationData(true);
+
+
+        }
+
+    }
 }

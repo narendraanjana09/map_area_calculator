@@ -23,6 +23,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.nsa.mapsspeech.ExtraClasses.FireBase;
 import com.nsa.mapsspeech.ExtraClasses.ProgressBar;
 import com.nsa.mapsspeech.Model.UserDataModel;
@@ -42,12 +43,15 @@ public class SignInActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
         sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-        if (sharedpreferences.getBoolean(prevStarted, false)){
+        progressBar=new ProgressBar(SignInActivity.this,"connecting...");
+        mfirebaseAuth=FirebaseAuth.getInstance();
+        if (sharedpreferences.getBoolean(prevStarted, false)&&mfirebaseAuth.getCurrentUser()!=null){
+            progressBar.show();
             updateUI();
         }
 
-        mfirebaseAuth=FirebaseAuth.getInstance();
-        progressBar=new ProgressBar(SignInActivity.this,"connecting...");
+
+
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.google_client_id))
@@ -113,22 +117,58 @@ public class SignInActivity extends AppCompatActivity {
             }
         });
     }
+    private void getToken(GoogleSignInAccount account) {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w("Token", "Fetching FCM registration token failed", task.getException());
+                            return;
+                        }
 
+                        // Get new FCM registration token
+                      String  user_token = task.getResult();
+                        subscribeUserForNotification();
+                        UserDataModel model=new UserDataModel(account.getDisplayName(),account.getEmail(),
+                                account.getPhotoUrl().toString(),user_token);
+                        new FireBase().getReferenceUsers().child(mfirebaseAuth.getCurrentUser().getUid()).setValue(model);
+                        setPreferences();
+                        updateUI();
+
+
+
+
+
+
+                    }
+                });
+    }
+    private void subscribeUserForNotification() {
+        FirebaseMessaging.getInstance().subscribeToTopic("themapproject")
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+
+                        if (task.isSuccessful()) {
+                            Log.e(TAG,"Subscribed for notification");
+                        }
+
+
+                    }
+                });
+    }
     private void uploadData(GoogleSignInAccount account) {
-        UserDataModel model=new UserDataModel(account.getDisplayName(),account.getEmail(),account.getPhotoUrl().toString());
-        new FireBase().getReferenceUsers().child(mfirebaseAuth.getCurrentUser().getUid()).setValue(model);
-        setPreferences();
-        updateUI();
-        progressBar.hide();
+       getToken(account);
+
     }
 
     private void updateUI() {
 
         GoogleSignInAccount account=GoogleSignIn.getLastSignedInAccount(getApplicationContext());
         if(account!=null){
-
-            Toast.makeText(this, "Activiy loaded", Toast.LENGTH_SHORT).show();
-            Intent intent=new Intent(SignInActivity.this,RealTimeViewActivity.class);
+            progressBar.hide();
+            Intent intent=new Intent(SignInActivity.this, DrawerActivity.class);
             startActivity(intent);
             finish();
 

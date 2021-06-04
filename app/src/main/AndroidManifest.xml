@@ -20,8 +20,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-
 
     <application
         android:allowBackup="true"
@@ -30,6 +31,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MapsSpeech">
+
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").
@@ -42,6 +44,11 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
+        <activity android:name=".Activities.DrawerActivity" />
+        <activity
+            android:name=".Activities.AddOnMap"
+            android:label="@string/title_activity_add_on_map"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
         <activity
             android:name=".Activities.RealTimeViewActivity"
             android:label="@string/title_activity_real_time_view" />
@@ -53,6 +60,11 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".Services.FirebaseMessageReceiver">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
         <service
             android:name=".Services.BackgroundService"
             android:enabled="true"
@@ -64,7 +76,6 @@
             android:resource="@string/asset_statements" />
 
         <activity android:name=".Activities.SpeechActivity" />
-        <activity android:name=".Activities.StartNavigationActivity" />
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

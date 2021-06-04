@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
+    android:id="@+id/search_bar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:weightSum="10"
@@ -49,6 +50,7 @@
         android:layout_weight="1"
         android:layout_width="40dp"
         android:layout_height="40dp"
+        android:onClick="openProfileMenu"
         android:src="@drawable/person"
 
       />

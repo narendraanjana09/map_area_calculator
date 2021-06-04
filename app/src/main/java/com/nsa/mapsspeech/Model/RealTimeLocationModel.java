@@ -1,39 +1,29 @@
 package com.nsa.mapsspeech.Model;
 
-public class LocationModel {
-    String lat;
-    String lng;
+public class RealTimeLocationModel {
+    String location;
     String status;
     String speed;
     String chargingLevel;
     boolean isCharging;
 
-    public LocationModel() {
+    public RealTimeLocationModel() {
     }
 
-    public LocationModel(String lat, String lng, String status, String speed, String chargingLevel, boolean isCharging) {
-        this.lat = lat;
-        this.lng = lng;
+    public RealTimeLocationModel(String location, String status, String speed, String chargingLevel, boolean isCharging) {
+        this.location = location;
         this.status = status;
         this.speed = speed;
         this.chargingLevel = chargingLevel;
         this.isCharging = isCharging;
     }
 
-    public String getLat() {
-        return lat;
+    public String getLocation() {
+        return location;
     }
 
-    public void setLat(String lat) {
-        this.lat = lat;
-    }
-
-    public String getLng() {
-        return lng;
-    }
-
-    public void setLng(String lng) {
-        this.lng = lng;
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     public String getStatus() {

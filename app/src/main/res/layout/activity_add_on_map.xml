@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:map="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/map"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Activities.AddOnMap" >
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:id="@+id/images_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            android:padding="5dp"
+            map:layout_constraintTop_toTopOf="parent"
+            >
+            <TextView
+                android:id="@+id/addImagesTxt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add Images  "
+                android:layout_marginStart="10dp"
+                android:gravity="center_vertical"
+                android:layout_alignParentStart="true"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                />
+
+            <ImageView
+                android:id="@+id/addImageButton"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:onClick="addImage"
+                android:layout_marginRight="10dp"
+                android:scaleType="centerCrop"
+                android:layout_above="@id/imagesViewPager"
+                android:layout_alignParentEnd="true"
+                android:src="@drawable/add_image_icon"
+                />
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/imagesViewPager"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/addImagesTxt"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal"
+                android:paddingStart="80dp"
+                android:paddingEnd="80dp"
+
+                />
+
+
+        </RelativeLayout>
+        <LinearLayout
+            android:id="@+id/zoomLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_margin="30dp"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toEndOf="parent">
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabViewData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="ViewData"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:tooltipText="View Saved Data"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/eye_off"
+                />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabChangeMapType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="changeMapType"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:tooltipText="Change Map Style"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/map"
+                />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabMyLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="moveCameraToMyLocation"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:tooltipText="Your Current Location"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/my_location"
+                />
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabZoomIn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="zoomIn"
+                android:layout_marginBottom="5dp"
+                app:elevation="0dp"
+                android:tooltipText="Zoom In"
+                app:borderWidth="0dp"
+                android:clickable="true"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/zoom_in"
+                tools:targetApi="lollipop"
+                android:focusable="true" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabZoomOut"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="zoomOut"
+                android:layout_marginBottom="5dp"
+                android:clickable="true"
+                android:tooltipText="Zoom Out"
+                app:elevation="0dp"
+                app:borderWidth="0dp"
+                android:backgroundTint="@color/white"
+                android:src="@drawable/zoom_out"
+                android:focusable="true"
+                android:contentDescription="@string/todo" />
+
+        </LinearLayout>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabPlayPause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="playPauseLocationUpdate"
+            app:elevation="0dp"
+            app:borderWidth="0dp"
+            android:visibility="invisible"
+            android:tooltipText="PlayPause"
+            map:layout_constraintEnd_toStartOf="@id/zoomLayout"
+            map:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginBottom="30dp"
+            android:layout_marginRight="5dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/play"
+            />
+        <LinearLayout
+            android:id="@+id/addLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_horizontal"
+            android:layout_marginBottom="30dp"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toStartOf="@id/zoomLayout">
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddPlace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="addLocation"
+            app:elevation="0dp"
+            app:borderWidth="0dp"
+            android:tooltipText="Add a Location"
+            android:layout_marginRight="5dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/add_location"
+            />
+              <TextView
+                        android:id="@+id/placeCountTextView"
+                        android:layout_toRightOf="@+id/fabAddPlace"
+                        android:layout_marginLeft="-27dp"
+                        android:fontFamily="@font/handlee"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#000000"/>
+                </RelativeLayout>
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="addRoute"
+            app:elevation="0dp"
+            app:borderWidth="0dp"
+            android:tooltipText="Add Route"
+            android:layout_marginRight="5dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/addroute"
+            />
+              <TextView
+                        android:id="@+id/routesCountTextView"
+                        android:layout_toRightOf="@+id/fabAddRoute"
+                        android:layout_marginLeft="-27dp"
+                        android:fontFamily="@font/handlee"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#000000"/>
+                </RelativeLayout>
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabAddArea"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="addArea"
+            android:layout_marginRight="5dp"
+            app:elevation="0dp"
+            android:tooltipText="Add Area"
+            app:borderWidth="0dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/add_area"
+            tools:targetApi="lollipop"
+            android:focusable="true" />
+          <TextView
+                        android:id="@+id/areaCountTextView"
+                        android:layout_toRightOf="@+id/fabAddArea"
+                        android:layout_marginLeft="-27dp"
+                        android:fontFamily="@font/handlee"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#000000"/>
+                </RelativeLayout>
+        </LinearLayout>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabDone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/done"
+            android:elevation="0dp"
+            android:onClick="uploadData"
+            android:visibility="invisible"
+            android:tooltipText="Add Task"
+            android:backgroundTint="@color/white"
+            map:elevation="0dp"
+            map:borderWidth="0dp"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toEndOf="parent"
+            android:layout_margin="30dp"
+
+            />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/close_icon"
+            android:visibility="invisible"
+            android:backgroundTint="@color/white"
+            android:onClick="cancelUpload"
+            android:elevation="0dp"
+            map:elevation="0dp"
+            map:borderWidth="0dp"
+            android:tooltipText="Cancel Task"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintStart_toStartOf="parent"
+            android:layout_margin="30dp"
+            />
+
+
+        <TextView
+            android:id="@+id/infoTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:visibility="invisible"
+            android:tooltipText="area or length info"
+            android:textAlignment="center"
+            android:padding="10dp"
+            android:background="@drawable/circular_background"
+            map:layout_constraintStart_toStartOf="parent"
+            map:layout_constraintBottom_toTopOf="@id/fabCancel"
+            android:layout_margin="20dp"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</fragment>

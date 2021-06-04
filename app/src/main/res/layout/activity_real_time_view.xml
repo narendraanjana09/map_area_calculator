@@ -15,20 +15,33 @@
             android:id="@+id/data"
             android:padding="10dp"
             android:layout_width="match_parent"
-            android:layout_height="400dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:textColor="@color/black"
             android:scrollbars="vertical"
             map:layout_constraintTop_toTopOf="parent"
             map:layout_constraintStart_toStartOf="parent"
             />
 
+        <TextView
+            android:id="@+id/mySpeedTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="4dp"
+            android:drawableLeft="@drawable/speed"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintStart_toStartOf="parent"
+            android:layout_margin="30dp"
+            android:gravity="center"
+            android:textColor="@color/black"
+            android:textSize="15sp"
+            android:textStyle="bold" />
         <RelativeLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            map:layout_constraintBottom_toBottomOf="parent"
-            map:layout_constraintStart_toStartOf="parent"
-            android:layout_marginBottom="30dp"
-            android:layout_marginStart="10dp"
+            map:layout_constraintEnd_toEndOf="parent"
+            map:layout_constraintTop_toBottomOf="@id/data"
+            android:layout_margin="10dp"
             >
 
             <TextView
@@ -102,6 +115,24 @@
             map:layout_constraintBottom_toBottomOf="parent"
             map:layout_constraintEnd_toStartOf="@id/ZoomLayout"
             />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabStartPausedNaviagtion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="playNaviagtion"
+            app:elevation="0dp"
+            android:rotation="90"
+            android:visibility="invisible"
+            android:layout_marginEnd="5dp"
+            app:borderWidth="0dp"
+            android:tooltipText="Your Current Location"
+            android:layout_marginBottom="30dp"
+            android:clickable="true"
+            android:backgroundTint="@color/white"
+            android:src="@drawable/play"
+            map:layout_constraintBottom_toBottomOf="parent"
+            map:layout_constraintEnd_toStartOf="@id/fabNavigationCancel"
+            />
         <LinearLayout
             android:id="@+id/ZoomLayout"
             android:layout_width="wrap_content"
@@ -123,6 +154,12 @@
                 android:textColor="@color/black"
                 android:checked="false"
                 android:text="off"/>
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" >
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabGetRoute"
                 android:layout_width="wrap_content"
@@ -136,6 +173,18 @@
                 android:backgroundTint="@color/white"
                 android:src="@drawable/direction"
                 />
+
+                    <TextView
+                        android:id="@+id/timerTextView"
+                        android:layout_toRightOf="@+id/fabGetRoute"
+                        android:layout_marginLeft="-22dp"
+                        android:fontFamily="@font/handlee"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#000000"/>
+                </RelativeLayout>
+
+            </FrameLayout>
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabChangeMapType"
                 android:layout_width="wrap_content"

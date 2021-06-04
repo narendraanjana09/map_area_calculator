@@ -4,14 +4,16 @@ public class UserDataModel {
     private String name;
     private String email;
     private String profileUrl;
+    private String token;
 
     public UserDataModel() {
     }
 
-    public UserDataModel(String name, String email, String profileUrl) {
+    public UserDataModel(String name, String email, String profileUrl, String token) {
         this.name = name;
         this.email = email;
         this.profileUrl = profileUrl;
+        this.token = token;
     }
 
     public String getName() {
@@ -36,5 +38,13 @@ public class UserDataModel {
 
     public void setProfileUrl(String profileUrl) {
         this.profileUrl = profileUrl;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }
