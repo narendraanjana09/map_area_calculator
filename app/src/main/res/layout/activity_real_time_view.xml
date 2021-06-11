@@ -23,6 +23,43 @@
             map:layout_constraintStart_toStartOf="parent"
             />
 
+         <LinearLayout
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:orientation="vertical"
+             android:rotation="-90"
+             android:id="@+id/zoomSeekLayout"
+             android:visibility="invisible"
+             android:layout_marginBottom="70dp"
+             map:layout_constraintStart_toStartOf="parent"
+             map:layout_constraintBottom_toTopOf="@id/mySpeedTextView"
+             >
+             <SeekBar
+                 android:id="@+id/zoomSeekbar"
+                 android:layout_width="200dp"
+                 android:layout_height="wrap_content"
+                 android:max="25"
+                 android:min="0"
+                 android:thumbTint="@color/black"
+                 android:progressBackgroundTint="@color/dark"
+                 android:progressTint="@color/black"
+                 android:progress="16"
+                 />
+             <SeekBar
+                 android:id="@+id/angleSeekbar"
+                 android:layout_width="200dp"
+                 android:layout_height="wrap_content"
+                 android:max="90"
+                 android:min="0"
+                 android:layout_marginTop="30dp"
+                 android:thumbTint="@color/black"
+                 android:progressBackgroundTint="@color/dark"
+                 android:progressTint="@color/black"
+                 android:progress="60"
+                 />
+
+
+         </LinearLayout>
         <TextView
             android:id="@+id/mySpeedTextView"
             android:layout_width="wrap_content"

@@ -17,6 +17,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
@@ -34,6 +35,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,6 +68,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.PolyUtil;
+
+
 import com.nsa.mapsspeech.Directions.DirectionHelper;
 import com.nsa.mapsspeech.Directions.DirectionPointListener;
 import com.nsa.mapsspeech.Directions.GetPathFromLocation;
@@ -73,6 +78,7 @@ import com.nsa.mapsspeech.Model.RealTimeLocationModel;
 import com.nsa.mapsspeech.Model.UserDataModel;
 import com.nsa.mapsspeech.R;
 import com.squareup.picasso.Picasso;
+
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -84,6 +90,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+
 
 import static com.nsa.mapsspeech.Activities.MapsActivity.decrypt;
 
@@ -102,7 +109,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
     private boolean mapTypeChanged = false;
     Switch switchOnOff;
     private boolean follow = false;
-    private String TAG = "RealTimeActivity";
+    private static String TAG = "RealTimeActivity";
     private Polyline routePloyline=null,currentPolyline=null;
     List<LatLng> currentList=null;
 
@@ -115,6 +122,10 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
     TextView timerTV,mySpeedTV;
     SharedPreferences prefs;
     LatLng tractEndLastLocation=null;
+//    private MapboxNavigation navigation;
+    SeekBar zoomBar,angleBar;
+    LinearLayout zoomSeekLayout;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,7 +137,6 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             id = getIntent().getStringExtra("id");
         }
 
-            id="PIxL2Whuu9PrKfwL2go3mAPqZbG3";
 
 
         locationProviderClient = LocationServices.getFusedLocationProviderClient(this);
@@ -135,7 +145,10 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         statusTV = findViewById(R.id.statusTextView);
         switchOnOff = findViewById(R.id.switchOnOff);
         timerTV=findViewById(R.id.timerTextView);
+        zoomSeekLayout=findViewById(R.id.zoomSeekLayout);
         mySpeedTV=findViewById(R.id.mySpeedTextView);
+        zoomBar=findViewById(R.id.zoomSeekbar);
+        angleBar=findViewById(R.id.angleSeekbar);
 
         prefs= getSharedPreferences("counter", MODE_PRIVATE);
         String counter=prefs.getString("saved_counter", "");
@@ -215,19 +228,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         mMap.setTrafficEnabled(true);
 
 
-//        try {
-//            // Customise the styling of the base map using a JSON object defined
-//            // in a raw resource file.
-//            boolean success = googleMap.setMapStyle(
-//                    MapStyleOptions.loadRawResourceStyle(
-//                            this, R.raw.style_json));
-//
-//            if (!success) {
-//                Log.e(TAG, "Style parsing failed.");
-//            }
-//        } catch (Resources.NotFoundException e) {
-//            Log.e(TAG, "Can't find style. Error: ", e);
-//        }
+
         if (!checkPermissions()){
             return;
         }
@@ -354,10 +355,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 locationProviderClient = LocationServices.getFusedLocationProviderClient(this);
                 if(myLocation!=null){
                 mylocationMarker.setVisible(true);
-                    locationProviderClient.requestLocationUpdates(mLocationRequest, null,null);
-
-                }else{
-                    locationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+                locationProviderClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
                 }
 
 
@@ -371,12 +369,15 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 });
             }
     }
+   
      LatLng lastLocation=null;
     private LocationCallback mLocationCallback = new LocationCallback() {
 
+        @SuppressLint("NewApi")
         @Override
         public void onLocationResult(LocationResult locationResult) {
             Location location = locationResult.getLastLocation();
+
             double speed=location.getSpeed();
             speed*=3.4;
             mySpeedTV.setText((int)speed+" km/hr");
@@ -389,19 +390,28 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 lastLocation=myLocation;
                 myLocation=latLng;
             }
-            float bearing=getBearing(lastLocation,myLocation);
-            mylocationMarker.setRotation(bearing);
+
+
+            //float bearing=getBearing(lastLocation,myLocation);
+                float bearing=location.getBearing();
+            Log.e("bearing","bearing = "+bearing+" accuracy = "+location.getBearingAccuracyDegrees());
+
 
             animateMarker(mylocationMarker,myLocation);
 
+            if(speed>1)
+            mylocationMarker.setRotation(bearing);
 
             if(animateCameraProjection){
                 if(follow){
                     switchOnOff.setChecked(false);
                 }
-                upDatecamera(myLocation,90,16,bearing);
+                if(speed>1)
+                upDatecamera(myLocation,(float) angleBar.getProgress(),(float)zoomBar.getProgress(),bearing);
+
+
             }
-            Log.e("locationCallback", "call back "+latLng);
+//            Log.e("locationCallback", "call back "+latLng);
         }};
 
 
@@ -448,7 +458,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 
                     if(realTimeLocationModel==null){
                         Toast.makeText(RealTimeViewActivity.this, "Location Deleted", Toast.LENGTH_SHORT).show();
-                        finish();
+                       finish();
                         return;
 
 
@@ -651,6 +661,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 
         return bitmap;
     }
+
     public void zoomIn(View view) {
         mMap.animateCamera(CameraUpdateFactory.zoomIn());
     }
@@ -669,6 +680,10 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             speedTV.setTextColor(getResources().getColor(R.color.black));
             mySpeedTV.setTextColor(getResources().getColor(R.color.black));
             statusTV.setTextColor(getResources().getColor(R.color.black));
+
+            setSeekBarColor(zoomBar,Color.BLACK);
+            setSeekBarColor(angleBar,Color.BLACK);
+
             dataTV.setTextColor(getResources().getColor(R.color.black));
             switchOnOff.setTextColor(getResources().getColor(R.color.black));
             mapTypeChanged = false;
@@ -676,6 +691,10 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
             batteryLevelTV.setTextColor(getResources().getColor(R.color.white));
             speedTV.setTextColor(getResources().getColor(R.color.white));
             mySpeedTV.setTextColor(getResources().getColor(R.color.white));
+
+            setSeekBarColor(zoomBar,Color.WHITE);
+            setSeekBarColor(angleBar,Color.WHITE);
+
             statusTV.setTextColor(getResources().getColor(R.color.white));
             dataTV.setTextColor(getResources().getColor(R.color.white));
             switchOnOff.setTextColor(getResources().getColor(R.color.white));
@@ -686,7 +705,10 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         changeMapElementsColor(mapTypeChanged);
     }
     }
-
+    public static void setSeekBarColor(SeekBar seekBar, int color) {
+        seekBar.getProgressDrawable().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        seekBar.getThumb().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
+    }
 
     private void changeMapElementsColor(boolean mapTypeChanged) {
         if(mapTypeChanged){
@@ -760,7 +782,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
     public void getRoute() {
 
         if(!(count<2)){
-            Toast.makeText(this, "You Can Update Route After 2 minutes!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "You Can Update Route After "+count+" seconds!", Toast.LENGTH_SHORT).show();
             return;
         }
            if(userLocation==null){
@@ -863,7 +885,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 }
 
                 timerTV.setText(count+"");
-                Log.e(TAG,"count = "+count);
+            //    Log.e(TAG,"count = "+count);
             }
 
             @Override
@@ -897,9 +919,6 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
                 String duration = durationObject.getString("text");
                 String text="Distance "+distance+"\n"+"Duration = "+duration+"\n"+instruction;
                 dataTV.setText(string+"\n"+text);
-
-
-
                 JSONObject polyline = step.getJSONObject("polyline");
                 String encodedPoints = polyline.getString("points");
                 // decode encoded path to list of points LatLng
@@ -982,6 +1001,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         if(routePloyline!=null) {
             mapUISettings(mapUiSettings);
             mMap.animateCamera(CameraUpdateFactory.newLatLng(myLocation));
+            zoomSeekLayout.setVisibility(View.VISIBLE);
             fabStartNav.setVisibility(View.INVISIBLE);
             fabCloseNav.setVisibility(View.VISIBLE);
             fabPlaynav.setVisibility(View.INVISIBLE);
@@ -1000,6 +1020,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         mapUISettings(true);
         fabStartNav.setVisibility(View.VISIBLE);
         fabPlaynav.setVisibility(View.INVISIBLE);
+        zoomSeekLayout.setVisibility(View.INVISIBLE);
         fabCloseNav.setVisibility(View.INVISIBLE);
         mylocationMarker.setVisible(false);
         animateCameraProjection=false;
@@ -1007,7 +1028,7 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
 
     }
 
-    private PolylineOptions getSavedRoute(String data){
+    public static PolylineOptions getSavedRoute(String data){
         try{
         JSONObject jsonObject;
         List<List<HashMap<String, String>>> routes = null;
@@ -1081,4 +1102,8 @@ public class RealTimeViewActivity extends FragmentActivity implements OnMapReady
         }
 
     }
+
+
+
+
 }

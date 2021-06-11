@@ -43,7 +43,17 @@
           "client_type": 3
         }
       ],
-    
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz5apF_TYUWsavoR_0m6enFgNOX2rY4pA"
+        },
+        {
+          "current_key": "AIzaSyDk_c4gAnEx5TN0kF8Q69IWmisqJSGpePY"
+        },
+        {
+          "current_key": "AIzaSyAcG10Fwe7c38qE1zQSqrZrzShbI4qVvQs"
+        }
+      ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
@@ -65,11 +75,29 @@
       },
       "oauth_client": [
         {
+          "client_id": "1018363210699-eqi1p8fjii1v1v20dhroamknbscmir3r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nsa.CodingAidDev",
+            "certificate_hash": "a44e817c5fbc529bef0acd0fb1061ec7b02062ec"
+          }
+        },
+        {
           "client_id": "1018363210699-7s10u1k3sre59p70gdhbrip2dog2lv1p.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
- 
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz5apF_TYUWsavoR_0m6enFgNOX2rY4pA"
+        },
+        {
+          "current_key": "AIzaSyDk_c4gAnEx5TN0kF8Q69IWmisqJSGpePY"
+        },
+        {
+          "current_key": "AIzaSyAcG10Fwe7c38qE1zQSqrZrzShbI4qVvQs"
+        }
+      ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
@@ -101,7 +129,18 @@
           "client_id": "1018363210699-7s10u1k3sre59p70gdhbrip2dog2lv1p.apps.googleusercontent.com",
           "client_type": 3
         }
-     
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz5apF_TYUWsavoR_0m6enFgNOX2rY4pA"
+        },
+        {
+          "current_key": "AIzaSyDk_c4gAnEx5TN0kF8Q69IWmisqJSGpePY"
+        },
+        {
+          "current_key": "AIzaSyAcG10Fwe7c38qE1zQSqrZrzShbI4qVvQs"
+        }
+      ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
@@ -122,7 +161,7 @@
       },
       "oauth_client": [
         {
-          "client_id": "1018363210699-jki5vgbamtf9t9jbrdaajovcjv0f98fa.apps.googleusercontent.com",
+          "client_id": "1018363210699-7046a528qi6dkjv1bb8obtkdd41q1l6l.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nsa.mapsspeech",
@@ -138,7 +177,7 @@
           }
         },
         {
-          "client_id": "1018363210699-te8s2c00c5q0aoe0mqttbna2i9stt1fj.apps.googleusercontent.com",
+          "client_id": "1018363210699-nv208kai103mhuqh11cku9rm8n77h831.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nsa.mapsspeech",
@@ -149,7 +188,18 @@
           "client_id": "1018363210699-7s10u1k3sre59p70gdhbrip2dog2lv1p.apps.googleusercontent.com",
           "client_type": 3
         }
-      
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz5apF_TYUWsavoR_0m6enFgNOX2rY4pA"
+        },
+        {
+          "current_key": "AIzaSyDk_c4gAnEx5TN0kF8Q69IWmisqJSGpePY"
+        },
+        {
+          "current_key": "AIzaSyAcG10Fwe7c38qE1zQSqrZrzShbI4qVvQs"
+        }
+      ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [

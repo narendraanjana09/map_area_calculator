@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:showIn="addonmap_navigation_view">
+    <item android:title= "add"
+        android:icon="@drawable/add"
+        >
+        <menu>
+            <item
+                android:id= "@+id/add_crop"
+                android:icon= "@drawable/plant"
+                android:title= "add current crop" />
+            <item
+                android:id= "@+id/add_places"
+                android:icon= "@drawable/place"
+                android:title= "places" />
+            <item
+                android:id= "@+id/add_routes"
+                android:icon= "@drawable/addroute"
+                android:title= "routes"
+                />
+            <item
+                android:id= "@+id/add_area"
+                android:icon= "@drawable/add_area"
+                android:title= "areas"
+                />
+
+
+        </menu>
+    </item>
+    <item android:title= "view"
+        android:icon="@drawable/eye_on"
+        >
+        <menu>
+            <item
+                android:id= "@+id/view_crop"
+                android:icon= "@drawable/plant"
+                android:title= "view current crops"
+                />
+            <item
+                android:id= "@+id/view_places"
+                android:icon= "@drawable/place"
+                android:title= "places" />
+            <item
+                android:id= "@+id/view_routes"
+                android:icon= "@drawable/addroute"
+                android:title= "routes"
+                />
+            <item
+                android:id= "@+id/view_area"
+                android:icon= "@drawable/add_area"
+                android:title= "areas"
+                />
+            <item
+                android:id= "@+id/add_work"
+                android:icon= "@drawable/work"
+                android:title= "other works"
+                />
+
+        </menu>
+    </item>
+
+</menu>

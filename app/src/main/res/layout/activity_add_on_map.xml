@@ -1,25 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:map="http://schemas.android.com/apk/res-auto"
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/map"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:name="com.google.android.gms.maps.SupportMapFragment"
+    android:id="@+id/addonmap_drawer_layout"
     android:layout_width="match_parent"
+    tools:openDrawer="start"
     android:layout_height="match_parent"
-    tools:context=".Activities.AddOnMap" >
+    tools:ignore="HardcodedText"
+    tools:context=".Activities.AddOnMap">
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/app_bar"
+            android:layout_width= "match_parent"
+            android:layout_height= "wrap_content"
+            android:background="@color/whitelight"
+            app:layout_constraintTop_toTopOf="parent"
+            android:theme= "@style/ThemeOverlay.AppCompat.ActionBar" >
+            <androidx.appcompat.widget.Toolbar
+                android:id= "@+id/toolbar"
+                android:layout_width= "match_parent"
+                android:layout_height= "?attr/actionBarSize"
+                app:title="Customize Your Map"
+                app:popupTheme= "@style/Widget.AppCompat.PopupMenu.Overflow" />
+        </com.google.android.material.appbar.AppBarLayout>
 
+<!--        app:titleTextColor="@color/white"-->
+<!--        android:background= "@color/black"-->
+
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/map_vieww"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
+        </com.google.android.gms.maps.MapView>
+        <HorizontalScrollView
+            android:id="@+id/kharifCropsView"
+            android:layout_width="match_parent"
+            android:visibility="gone"
+            android:layout_height="wrap_content"
+            android:scrollbars="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/app_bar"
+             >
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/kharif_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    android:tooltipText="Select Crop type"
+                    app:chipSpacingHorizontal="5dp"
+                    app:chipSpacingVertical="5dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginEnd="20dp"
+                    android:layout_marginStart="40dp"
+                    app:chipSpacing="25dp">
+
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:text="Soybean" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:text="Sesame" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:layout_height="wrap_content"
+                        android:text="Mung bean" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:layout_height="wrap_content"
+                        android:text="Guar" />
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:text="Arhar " />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:layout_height="wrap_content"
+                        android:text="Groundnut" />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:layout_height="wrap_content"
+                        android:text="Green gram " />
+
+                    <com.google.android.material.chip.Chip
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:textColor="@color/white"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:chipBackgroundColor="@color/values"
+                        android:text="Black gram" />
+
+
+
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+        </HorizontalScrollView>
         <RelativeLayout
             android:id="@+id/images_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="invisible"
             android:padding="5dp"
-            map:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/app_bar"
             >
             <TextView
                 android:id="@+id/addImagesTxt"
@@ -65,8 +200,8 @@
             android:orientation="vertical"
             android:gravity="center_horizontal"
             android:layout_margin="30dp"
-            map:layout_constraintBottom_toBottomOf="parent"
-            map:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fabViewData"
                 android:layout_width="wrap_content"
@@ -146,8 +281,8 @@
             app:borderWidth="0dp"
             android:visibility="invisible"
             android:tooltipText="PlayPause"
-            map:layout_constraintEnd_toStartOf="@id/zoomLayout"
-            map:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/zoomLayout"
+            app:layout_constraintBottom_toBottomOf="parent"
             android:layout_marginBottom="30dp"
             android:layout_marginRight="5dp"
             android:clickable="true"
@@ -161,8 +296,8 @@
             android:orientation="horizontal"
             android:gravity="center_horizontal"
             android:layout_marginBottom="30dp"
-            map:layout_constraintBottom_toBottomOf="parent"
-            map:layout_constraintEnd_toStartOf="@id/zoomLayout">
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/zoomLayout">
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" >
@@ -250,10 +385,10 @@
             android:visibility="invisible"
             android:tooltipText="Add Task"
             android:backgroundTint="@color/white"
-            map:elevation="0dp"
-            map:borderWidth="0dp"
-            map:layout_constraintBottom_toBottomOf="parent"
-            map:layout_constraintEnd_toEndOf="parent"
+            app:elevation="0dp"
+            app:borderWidth="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             android:layout_margin="30dp"
 
             />
@@ -266,11 +401,11 @@
             android:backgroundTint="@color/white"
             android:onClick="cancelUpload"
             android:elevation="0dp"
-            map:elevation="0dp"
-            map:borderWidth="0dp"
+            app:elevation="0dp"
+            app:borderWidth="0dp"
             android:tooltipText="Cancel Task"
-            map:layout_constraintBottom_toBottomOf="parent"
-            map:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             android:layout_margin="30dp"
             />
 
@@ -281,13 +416,44 @@
             android:layout_height="wrap_content"
             android:textSize="16sp"
             android:textColor="@color/black"
+            android:onClick="showPolygon"
             android:visibility="invisible"
             android:tooltipText="area or length info"
             android:textAlignment="center"
             android:padding="10dp"
             android:background="@drawable/circular_background"
-            map:layout_constraintStart_toStartOf="parent"
-            map:layout_constraintBottom_toTopOf="@id/fabCancel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/fabCancel"
             android:layout_margin="20dp"/>
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent">
+        <include layout="@layout/bottom_sheet" />
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
-</fragment>
+    <com.google.android.material.navigation.NavigationView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:id="@+id/addonmap_navigation_view"
+        app:menu="@menu/addonmap_menu_drawer" >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <Button
+                android:id="@+id/logout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:onClick="refresh"
+                android:drawableRight="@drawable/refresh"
+                android:text="refresh"
+                android:textAllCaps="false"/>
+        </LinearLayout>
+    </com.google.android.material.navigation.NavigationView>
+</androidx.drawerlayout.widget.DrawerLayout>

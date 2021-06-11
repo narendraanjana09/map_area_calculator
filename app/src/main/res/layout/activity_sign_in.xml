@@ -3,8 +3,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:background="@color/black"
     android:layout_height="match_parent"
     tools:context=".Activities.SignInActivity">
+
+
+    <TextView
+        android:id="@+id/font"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="60dp"
+        android:layout_marginBottom="120dp"
+        android:fontFamily="@font/coiny"
+        android:textColor="@color/white"
+        android:text="Sign-In"
+        android:textSize="32sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/googleSignInLayout" />
+
     <LinearLayout
         android:id="@+id/googleSignInLayout"
         android:onClick="googleSignIn"

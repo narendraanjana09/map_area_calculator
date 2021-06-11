@@ -1,10 +1,8 @@
 package com.nsa.mapsspeech.Activities;
 
-import androidx.activity.contextaware.OnContextAvailableListener;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.location.LocationManagerCompat;
 import androidx.core.view.GravityCompat;
@@ -13,6 +11,8 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 
+import android.animation.IntEvaluator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -30,6 +30,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -60,10 +61,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -90,6 +91,7 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd;
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -98,15 +100,18 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Dash;
 import com.google.android.gms.maps.model.Gap;
+import com.google.android.gms.maps.model.GroundOverlay;
+import com.google.android.gms.maps.model.GroundOverlayOptions;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PatternItem;
@@ -121,9 +126,12 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.dynamiclinks.DynamicLink;
 import com.google.firebase.dynamiclinks.FirebaseDynamicLinks;
 import com.google.firebase.dynamiclinks.PendingDynamicLinkData;
@@ -139,24 +147,29 @@ import com.google.maps.model.EncodedPolyline;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.DexterError;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.PermissionRequestErrorListener;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+import com.karumi.dexter.listener.single.PermissionListener;
+import com.karumi.dexter.listener.single.SnackbarOnDeniedPermissionListener;
 import com.kazakago.cryptore.BlockMode;
 import com.kazakago.cryptore.CipherAlgorithm;
 import com.kazakago.cryptore.Cryptore;
 import com.kazakago.cryptore.DecryptResult;
 import com.kazakago.cryptore.EncryptResult;
 import com.kazakago.cryptore.EncryptionPadding;
-import com.mapbox.api.directions.v5.models.DirectionsResponse;
-import com.mapbox.api.directions.v5.models.DirectionsRoute;
-import com.mapbox.geojson.Point;
-import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.services.android.navigation.ui.v5.NavigationLauncher;
-import com.mapbox.services.android.navigation.ui.v5.NavigationLauncherOptions;
-import com.mapbox.services.android.navigation.v5.navigation.MapboxNavigation;
-import com.mapbox.services.android.navigation.v5.navigation.NavigationRoute;
 
+import com.maxkeppeler.sheets.core.IconButton;
+import com.maxkeppeler.sheets.input.InputSheet;
+import com.maxkeppeler.sheets.input.type.InputCheckBox;
+import com.maxkeppeler.sheets.input.type.InputSeparator;
+import com.nsa.mapsspeech.ExtraClasses.FireBase;
+import com.nsa.mapsspeech.ExtraClasses.ProgressBar;
 import com.nsa.mapsspeech.ExtraClasses.StartSpeechRecognition;
+import com.nsa.mapsspeech.Model.Work.WorkModel;
 import com.nsa.mapsspeech.R;
 import com.nsa.mapsspeech.Services.BackgroundService;
 import com.nsa.mapsspeech.Services.Common;
@@ -169,21 +182,26 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
 import de.hdodenhof.circleimageview.CircleImageView;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
+import kotlin.jvm.functions.Function1;
+
+import static com.nsa.mapsspeech.Activities.AddOnMap.areaModelList;
+import static com.nsa.mapsspeech.Activities.AddOnMap.cropList;
+import static com.nsa.mapsspeech.Activities.AddOnMap.placeModelList;
+import static com.nsa.mapsspeech.Activities.AddOnMap.routeModelList;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
-        RecognitionListener, SharedPreferences.OnSharedPreferenceChangeListener,NavigationView.OnNavigationItemSelectedListener{
+public class MapsActivity extends FragmentActivity implements
+        NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
+        RecognitionListener, SharedPreferences.OnSharedPreferenceChangeListener{
 
         @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
@@ -194,11 +212,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
     private void setButtonState(boolean isRequestEnable) {
+
         if(isRequestEnable){
-            switchLanguageChanger.setChecked(true);
+            share_rtl_switch.setChecked(true);
+            share_rtl_item.setChecked(true);
+
 
         }else{
-            switchLanguageChanger.setChecked(false);
+            share_rtl_switch.setChecked(false);
+            share_rtl_item.setChecked(false);
+
         }
     }
 
@@ -237,7 +260,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private boolean isNavigation = false;
     private boolean isDeepLink=false;
+    public DrawerLayout drawerLayout;
+    public NavigationView navigationView;
+
+    private MapView mapView;
     private GoogleMap mMap;
+    public static final String MAP_VIEW_BUNDLE_KEY = "AIzaSyAcG10Fwe7c38qE1zQSqrZrzShbI4qVvQs";
+
     boolean isMapReady=false;
     ArrayList<String> commandList=new ArrayList<>();
     TextView commandTextView;
@@ -260,7 +289,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     FloatingActionButton fabOtherOptions, fabMic,fabCurrentLocation,
             fabShareLocation, fabCancelLocationShare, fabNavigation;
 
-    int isMapNumber = 1;
 
     boolean needMic = true;
 
@@ -270,7 +298,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Polygon polygon;
 
     Polyline polyline;
-    Switch switchLanguageChanger;
+
 
     private LinearLayout linksLayout, zoomLayout;
     AdView adView1, adView2;
@@ -284,8 +312,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Resources resources;
     double default_area ;
 
-    private MapboxNavigation navigation;
-    private DirectionsRoute currentRoute;
+
 
     TextToSpeech textToSpeech;
 
@@ -296,8 +323,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     boolean gotDeepLink=false;
     SharedPreferences sharedPreferences ;
 
-        private DrawerLayout drawerLayout;
-        private NavigationView navigationView;
+    MapStyleOptions mapStyleOptions_dark,mapStyleOptions_light;
+
+    public static String SEASON="";
+    public static String YEAR="";
 
 
     private void resetSpeechRecognizer() {
@@ -330,13 +359,29 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         setContentView(R.layout.activity_maps);
-        drawerLayout = findViewById(R.id.drawer_layout);
-        navigationView=findViewById(R.id.navigation_view);
+        guser= GoogleSignIn.getLastSignedInAccount(this);
+        getDrawer();
+        getSeason();
+        getPermissions();
+
+        setImageAndName();
+        mapStyleOptions_dark = MapStyleOptions.loadRawResourceStyle(this,R.raw.style_json_dark);
+        mapStyleOptions_light = MapStyleOptions.loadRawResourceStyle(this,R.raw.style_json_light);
+
         navigationView.setNavigationItemSelectedListener(this);
+
+        Bundle mapViewBundle = null;
+        if (savedInstanceState != null) {
+            mapViewBundle = savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        }
+
+        mapView = findViewById(R.id.map_view);
+        mapView.onCreate(mapViewBundle);
+        mapView.getMapAsync(this);
         default_area= Double.parseDouble(getResources().getString(R.string.default_area));
         instance=this;
         FirebaseApp.initializeApp(this);
-        guser= GoogleSignIn.getLastSignedInAccount(this);
+
         fuser= FirebaseAuth.getInstance().getCurrentUser();
         profileImageView=findViewById(R.id.circlarImageView);
       Picasso.get().load(guser.getPhotoUrl()).into(profileImageView);
@@ -348,35 +393,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         setRecogniserIntent();
-        gotDeepLink=true;
 
-        checkForDynamicLink();
 
         handleIntent();
 
         resources = getResources();
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-     
-        Mapbox.getInstance(this, resources.getString(R.string.mapbox_access_token));
-        navigation = new MapboxNavigation(MapsActivity.this, resources.getString(R.string.mapbox_access_token));
 
-        switchLanguageChanger = findViewById(R.id.changeLanguageSwitch);
-        changeLanguage();
+
+       // changeLanguage();
         adView1 = findViewById(R.id.adView1);
         adView2 = findViewById(R.id.adView2);
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
                 loadBannerAds();
-                loadInterstialAds();
-                loadRewardedInterstitialAds();
+//                loadInterstialAds();
+//                loadRewardedInterstitialAds();
             }
         });
 
 
-        getPermissions();
         prepareLocationService();
 
         fabMic = findViewById(R.id.fabMic);
@@ -434,47 +470,159 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    private void getSeason() {
+        final Calendar c = Calendar.getInstance();
+        this.YEAR=""+c.get(Calendar.YEAR);
 
+        int mMonth = c.get(Calendar.MONTH)+1;
+        if(mMonth>=6&&mMonth<=9){
+            this.SEASON="KHARIF";
+        }else{
+            this.SEASON="Rabi";
+        }
+
+    }
+
+
+    private void getDrawer() {
+        drawerLayout = findViewById(R.id.my_drawer_layout);
+        navigationView = findViewById(R.id.navigation_view);
+        this.share_rtl_item= navigationView.getMenu().findItem(R.id.share_rtl_switch);
+        this.map_normal_item= navigationView.getMenu().findItem(R.id.normal_map);
+        this.map_satellite_item= navigationView.getMenu().findItem(R.id.satellite_map);
+        this.map_dark_item= navigationView.getMenu().findItem(R.id.dark_map);
+        this.share_rtl_switch = (Switch) share_rtl_item.getActionView();
+
+        share_rtl_switch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if(backgroundService!=null) {
+                if (isChecked) {
+                    share_rtl_item.setChecked(true);
+                    getRealtimeLocationSharePermission();
+                } else {
+                    share_rtl_item.setChecked(false);
+                    backgroundService.removeLocationUpdates();
+                }
+            }
+        });
+    }
+
+    private void setImageAndName() {
+        View header = navigationView.getHeaderView(0);
+        TextView nameView= (TextView) header.findViewById(R.id.nameTextView);
+       CircleImageView imageView= (CircleImageView) header.findViewById(R.id.profileImageView);
+        Picasso.get().load(guser.getPhotoUrl()).into(imageView);
+        nameView.setText(guser.getDisplayName());
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        Bundle mapViewBundle = outState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        if (mapViewBundle == null) {
+            mapViewBundle = new Bundle();
+            outState.putBundle(MAP_VIEW_BUNDLE_KEY, mapViewBundle);
+        }
+
+        mapView.onSaveInstanceState(mapViewBundle);
+    }
         public void openProfileMenu(View view){
-        drawerLayout.openDrawer(GravityCompat.END);
+            drawerLayout.openDrawer(GravityCompat.END);
         }
+    private boolean isChecked = false;
 
-        @Override
-        public boolean onNavigationItemSelected(@NonNull @NotNull MenuItem item) {
+    MenuItem share_rtl_item=null,
+            map_normal_item=null,
+            map_satellite_item=null,
+            map_dark_item=null;
+    Switch share_rtl_switch=null;
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
 
-            // Handle navigation view item clicks here.
-            int id = item.getItemId();
-            if (id == R.id.nav_camera) {
-                Toast.makeText(this, "Item nav_camera", Toast.LENGTH_SHORT).show();
-                // Handle the camera action
-            } else if (id == R.id.nav_gallery) {
-                Toast.makeText(this, "Item nav_gallery", Toast.LENGTH_SHORT).show();
-            } else if (id == R.id.nav_slideshow) {
-                Toast.makeText(this, "Item nav_slideshow", Toast.LENGTH_SHORT).show();
-            } else if (id == R.id.nav_manage) {
-                Toast.makeText(this, "Item nav_manage", Toast.LENGTH_SHORT).show();
 
-            }else if (id == R.id.app_share) {
-                Toast.makeText(this, "Item app_share", Toast.LENGTH_SHORT).show();
+        return true;
+    }
 
-            }
-            else if (id == R.id.location_share) {
-                Toast.makeText(this, "Item location_share", Toast.LENGTH_SHORT).show();
 
-            }
-            return true;
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull @NotNull MenuItem item) {
+        int id=item.getItemId();
+        MenuItem areaItem=navigationView.getMenu().findItem(R.id.calculate_area);
+        MenuItem lengthItem=navigationView.getMenu().findItem(R.id.calculate_length);
+
+        boolean check=item.isChecked();
+        switch(id){
+            case R.id.normal_map:changeMap(1);
+                break;
+            case R.id.satellite_map:changeMap(2);
+                break;
+            case R.id.dark_map:changeMap(3);
+                break;
+            case R.id.calculate_area:
+
+                   if(check){
+                       clearAll();
+                       item.setChecked(!check);
+                   }else{
+                       if(lengthItem.isChecked()){
+                           lengthItem.setChecked(false);
+                       }
+                       addMarkerOnMap(true,false);
+                       item.setChecked(!check);
+                   }
+                break;
+            case R.id.calculate_length:
+                if(check){
+                    clearAll();
+                    item.setChecked(!check);
+                }else{
+                      if(areaItem.isChecked()){
+                           areaItem.setChecked(false);
+                       }
+                    addMarkerOnMap(false,false);
+                    item.setChecked(!check);
+                }
+                break;
+            case R.id.app_share:shareAppLink();
+                break;
+            case R.id.location_share:setMarker();
+                if(areaItem.isChecked()){
+                    areaItem.setChecked(false);
+                }
+                if(lengthItem.isChecked()){
+                    lengthItem.setChecked(false);
+                }
+
+                break;
+            case R.id.share_rtl_switch:
+                if(share_rtl_switch.isChecked()){
+                    share_rtl_switch.setChecked(false);
+                }else{
+                    share_rtl_switch.setChecked(true);
+                }
+
+                break;
         }
+        drawerLayout.closeDrawer(GravityCompat.END);
+        return true;
+    }
 
 
 
-        @Override
+
+    @Override
     protected void onStart() {
         super.onStart();
+            mapView.onStart();
         PreferenceManager.getDefaultSharedPreferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
         if(!gotDeepLink){
 
+            if(gotAllPermission){
         checkForDynamicLink();
+
+            }
     }
     }
 
@@ -522,10 +670,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     }else if(type.equals("realtimelocation")){
                         String id=deepLink.getQueryParameter("userid");
                         if(!id.isEmpty()){
-//                            if(id.equals(fuser.getUid())){TODO: Unblock it
-//                                showMeUserCurrentLoaction();
-//                                return;
-//                            }
+                            if(id.equals(fuser.getUid())){
+                                showMeUserCurrentLoaction();
+                                return;
+                            }
                       Intent intent=new Intent(MapsActivity.this,RealTimeViewActivity.class);
                       intent.putExtra("id",id);
                       startActivity(intent);
@@ -634,30 +782,81 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         commandTextView.setText(text);
     }
 
-    private void getPermissions() {
-        Dexter.withContext(this)
-                .withPermissions(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
+
+    public static final int RequestPermissionCode = 7;
+    private void getPermissions(){
+        ActivityCompat.requestPermissions(MapsActivity.this, new String[]
+                {Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.RECORD_AUDIO,
                         Manifest.permission.READ_PHONE_STATE
                         ,Manifest.permission.ACCESS_COARSE_LOCATION
+                        ,Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.CAMERA
+                }, RequestPermissionCode);
+    }
 
-                ).withListener(new MultiplePermissionsListener() {
-            @Override
-            public void onPermissionsChecked(MultiplePermissionsReport report) {
-                if (report.areAllPermissionsGranted()) {
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
 
+            case RequestPermissionCode:
+
+                if (grantResults.length > 0) {
+
+                    boolean ACCESS_FINE_LOCATION = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                    boolean RECORD_AUDIO = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+                    boolean READ_PHONE_STATE = grantResults[2] == PackageManager.PERMISSION_GRANTED;
+                    boolean ACCESS_COARSE_LOCATION = grantResults[3] == PackageManager.PERMISSION_GRANTED;
+                    boolean READ_EXTERNAL_STORAGE = grantResults[4] == PackageManager.PERMISSION_GRANTED;
+                    boolean WRITE_EXTERNAL_STORAGE = grantResults[5] == PackageManager.PERMISSION_GRANTED;
+                    boolean CAMERA = grantResults[6] == PackageManager.PERMISSION_GRANTED;
+
+                    if (ACCESS_FINE_LOCATION && RECORD_AUDIO && READ_PHONE_STATE && ACCESS_COARSE_LOCATION
+                         && READ_EXTERNAL_STORAGE && WRITE_EXTERNAL_STORAGE && CAMERA) {
+
+                        Log.e("permission","granted");
+                        gotAllPermission=true;
+                        gotDeepLink=true;
+                        checkForDynamicLink();
+
+                    } else {
+                        showSettingsDialog();
+                    }
                 }
 
-            }
-
-            @Override
-            public void onPermissionRationaleShouldBeShown(List<PermissionRequest> list, PermissionToken permissionToken) {
-
-            }
-
-        }).check();
+                break;
+        }
     }
+    boolean gotAllPermission=false;
+
+
+
+    private void showSettingsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+
+        builder.setTitle("Need Permissions");
+
+        builder.setMessage("This app needs permission to use this feature. You can grant them in app settings.");
+        builder.setPositiveButton("GOTO SETTINGS", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+
+                dialog.cancel();
+
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                Uri uri = Uri.fromParts("package", getPackageName(), null);
+                intent.setData(uri);
+                startActivity(intent);
+            }
+        });
+        builder.setCancelable(false);
+
+        builder.show();
+
+    }
+
 
     private void audioMute(boolean mute) {
         if (mute) {
@@ -683,13 +882,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onResume() {
         Log.i(LOG_TAG, "resume");
         super.onResume();
+        mapView.onResume();
         resetSpeechRecognizer();
         speech.startListening(recognizerIntent);
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
 
     }
 
     @Override
     protected void onPause() {
+        mapView.onPause();
         gotDeepLink=false;
         speech.stopListening();
         Log.i(LOG_TAG, "pause");
@@ -699,7 +902,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     protected void onStop() {
-
+        mapView.onStop();
         audioMute(false);
         Log.i(LOG_TAG, "stop");
         if(mBounds){
@@ -758,9 +961,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
        // Toast.makeText(this, ""+text, Toast.LENGTH_SHORT).show();
         if (text.equals("tiger")) {
             speech.destroy();
-
             new StartSpeechRecognition(MapsActivity.this).listenToUser();
             return;
+        }else if(text.contains("open menu")){
+            openProfileMenu(null);
         }else if(text.contains("other")||text.contains("option")){
                fabOtherOptions.callOnClick();
         }else if(text.contains("show all command")){
@@ -771,26 +975,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             Toast.makeText(this, "Map Refreshed", Toast.LENGTH_SHORT).show();
             clearAll();
         }else if(text.contains("real time")){
-            switchLanguageChanger.setChecked(true);
+            share_rtl_switch.setChecked(true);
+
         }else if(text.contains("share app")){
-            Toast.makeText(this, "Select An App To Share App Link", Toast.LENGTH_SHORT).show();
             shareAppLink();
         }else if(text.equals("calculate area")){
-            Toast.makeText(this, "Tap on Map to calculate area", Toast.LENGTH_SHORT).show();
             addMarkerOnMap(true,false);
 
         }else if(text.equals("calculate length")){
-            Toast.makeText(this, "Tap on Map to calculate length", Toast.LENGTH_SHORT).show();
             addMarkerOnMap(false,false);
-
         }else if(text.contains("developer")){
             showDeveloperInfo();
 
-        }else if(text.contains("change map")){
-            Toast.makeText(this, "Map Type Changed", Toast.LENGTH_SHORT).show();
-            changeMap();
+        }else if(text.contains("type normal")){
+            changeMap(1);
+        }else if(text.contains("type satellite")){
+            changeMap(2);
+        }else if(text.contains("type dark")){
+            changeMap(3);
         }else if(text.contains("close dialog")||text.contains("cancel dialog")||
                   text.contains("dismiss dialog")){
+            drawerLayout.closeDrawer(GravityCompat.END);
             commandTextView.setVisibility(View.INVISIBLE);
                    removeAllDialog();
 
@@ -952,29 +1157,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return message;
     }
 
-    private void changeSwitchText(boolean isChecked) {
-        if (isChecked) {
-            switchLanguageChanger.setText("on");
-        } else {
-            switchLanguageChanger.setText("off");
 
-        }
-    }
-    public void changeLanguage() {
-        switchLanguageChanger.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(backgroundService!=null) {
-                    if (isChecked) {
-                        getRealtimeLocationSharePermission();
-                    } else {
-                        backgroundService.removeLocationUpdates();
-                    }
-                }
-                changeSwitchText(isChecked);
-            }
-        });
-    }
+
 
     private void getRealtimeLocationSharePermission() {
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
@@ -990,7 +1174,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                                 switchLanguageChanger.setChecked(false);
+
+                        share_rtl_switch.setChecked(false);
                     }
                 })
                 .create();
@@ -1017,7 +1202,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
             public void onCancel(DialogInterface dialog) {
-                switchLanguageChanger.setChecked(false);
+                share_rtl_switch.setChecked(false);
+
             }
         });
         dialog.setMessage("Set Timer(in hr)");
@@ -1168,7 +1354,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     searchAddress(false, "",null);
                     return true;
                 }
-                return false;
+                return true;
             }
         });
     }
@@ -1216,15 +1402,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 // below line is to animate camera to that position.
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
                 if(navigateTo){
-                    if(command!=null){
-                        if(command.equals("g")){
-                            openInGoogleMaps();
-                        }else{
-                            startNavigationHere();
-                        }
-                    }else{
-                    startNavigate();
-                }
+                   startNavigate();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -1268,6 +1446,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         isMapReady = true;
+        map_normal_item.setChecked(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
         mMap.getUiSettings().setCompassEnabled(false);
 
@@ -1511,7 +1690,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED){
 
-            getPermissions();
+
         }else{
 
             mMap.setMyLocationEnabled(true);
@@ -1628,33 +1807,76 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
          changeMicDrawable();
 
     }
+    public void mapDark(){
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success=mMap.setMapStyle(mapStyleOptions_dark);
 
-    public void changeMapType(View view) {
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-        loadInterstialAds();
-        loadBannerAds();
-       changeMap();
+                map_normal_item.setChecked(true);
+                map_satellite_item.setChecked(false);
+                map_dark_item.setChecked(false);
+            }else{
+                Log.e(TAG, "Style parsing success.");
+                map_normal_item.setChecked(false);
+                map_satellite_item.setChecked(false);
+                map_dark_item.setChecked(true);
+            }
+
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
 
     }
-    public void changeMap(){
-        if(isMapNumber==1){
-            isMapNumber=2;
+    public void mapLight(){
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success=mMap.setMapStyle(mapStyleOptions_light);
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+                map_normal_item.setChecked(true);
+                map_satellite_item.setChecked(false);
+                map_dark_item.setChecked(false);
+            }else{
+                Log.e(TAG, "Style parsing success.");
+                map_normal_item.setChecked(true);
+                map_satellite_item.setChecked(false);
+                map_dark_item.setChecked(false);
+            }
+
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
+    }
+
+
+    public void changeMap(int num){
+     //   loadInterstialAds();
+
+        if(num==1){
+           mapLight();
+
+
+
+        }else if(num==2){
+            Toast.makeText(this, "MAP_TYPE_SATELLITE", Toast.LENGTH_SHORT).show();
             mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-            switchLanguageChanger.setTextColor(Color.WHITE);
 
+            map_normal_item.setChecked(false);
+            map_satellite_item.setChecked(true);
+            map_dark_item.setChecked(false);
+        }else if(num==3){
+            mapDark();
 
-        }else{
-            isMapNumber=1;
-            mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-            switchLanguageChanger.setTextColor(Color.BLACK);
-
-        }
-        if(mBottomSheetDialog==null){
-            return;
-        }
-        if(mBottomSheetDialog.isShowing()){
-        mBottomSheetDialog.dismiss();
-        }
+                   }
 
     }
 
@@ -1679,17 +1901,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    public void calculateArea(View view) {
-        mBottomSheetDialog.dismiss();
-        loadBannerAds();
-        getWhatUserWantToCalculate();
 
-
-           
-
-    }
     String lengthText;
     private void getWhatUserWantToCalculate() {
+        loadBannerAds();
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle(resources.getString(R.string.check_calculate_title))
                 .setCancelable(false)
@@ -1714,6 +1929,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         
     }
     private void addMarkerOnMap(boolean area,boolean isLocation){
+        if(area){
+            Toast.makeText(this, "Click on Map to start calculating area", Toast.LENGTH_SHORT).show();
+        }else{
+            Toast.makeText(this, "Click on Map to start calculating length", Toast.LENGTH_SHORT).show();
+
+        }
         clearAll();
         if(area){
             lengthText=resources.getString(R.string.perimeter_text)+"👇";
@@ -1865,76 +2086,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void startNavigate() {
 
 
-
         if(userLocation==null || shareLocation==null){
             Toast.makeText(MapsActivity.this, "Try After Some Time!", Toast.LENGTH_SHORT).show();
             return;
         }
-        AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
-                .setPositiveButton("Open Here", (dialogInterface, i) -> {
-                    startNavigationHere();
-                })
-                .setNegativeButton("Google Maps",(dialogInterface, i) -> {
-                    openInGoogleMaps();
-                })
-                .create();
-        dialog.show();
-        dialogList.add(dialog);
+        openInGoogleMaps();
+
 
 
 
 
     }
 
-    private void startNavigationHere() {
-        Point origin = Point.fromLngLat(userLocation.longitude,userLocation.latitude);
-        Point destination = Point.fromLngLat(shareLocation.longitude,shareLocation.latitude);
-        NavigationRoute.builder(MapsActivity.this)
-                .accessToken(resources.getString(R.string.mapbox_access_token ))
-                .origin(origin)
-                .destination(destination)
-                .build()
-                .getRoute(new Callback<DirectionsResponse>() {
-                    @Override
-                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
-// You can get the generic HTTP info about the response
-                        Log.d(TAG, "Response code: " + response.code());
-                        if (response.body() == null) {
-                            Toast.makeText(MapsActivity.this, "No routes found, make sure you set the right place...", Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "No routes found, make sure you set the right user and access token.");
-                            return;
-                        } else if (response.body().routes().size() < 1) {
-                            Toast.makeText(MapsActivity.this, "No routes found", Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "No routes found");
-                            return;
-                        }
-                        currentRoute = response.body().routes().get(0);
-
-
-                        if(currentRoute.distance()<2.0){
-                            Toast.makeText(MapsActivity.this, "Distance Too Less", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        NavigationLauncherOptions options = NavigationLauncherOptions.builder()
-                                .directionsRoute(currentRoute)
-                                .shouldSimulateRoute(false)
-                                .build();
-// Call this method with Context from within an Activity
-
-
-                        NavigationLauncher.startNavigation(MapsActivity.this, options);
-
-
-                    }
-
-
-                    @Override
-                    public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
-                        Log.e(TAG, "Error: " + throwable.getMessage());
-                    }
-                });
-    }
 
     private void openInGoogleMaps() {
         Uri gmmIntentUri = Uri.parse("google.navigation:q="+shareLocation.latitude+","+shareLocation.longitude);
@@ -1945,8 +2108,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     public void moveCameraToMyLocation(View view) {
-        loadRewardedInterstitialAds();
-        loadBannerAds();
+//        loadRewardedInterstitialAds();
+//        loadBannerAds();
         if(isLocationEnabled(MapsActivity.this)){
             showMeUserCurrentLoaction();
         }else{
@@ -1958,7 +2121,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void developerInfo(View view) {
         mBottomSheetDialog.dismiss();
-        loadInterstialAds();
+     //   loadInterstialAds();
         loadRewardedInterstitialAds();
 
         showDeveloperInfo();
@@ -2014,6 +2177,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private void changeDefaultAreaDialog(String message) {
         EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+        editText.setTextColor(Color.WHITE);
         AlertDialog dialog = new AlertDialog.Builder(MapsActivity.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle(resources.getString(R.string.change_default_area_title))
                 .setMessage(message)
@@ -2098,13 +2262,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .setTitle("Location Type?")
 
                 .setPositiveButton("Real Time", (dialogInterface, i) -> {
+                    share_rtl_switch.setChecked(true);
 
-                    switchLanguageChanger.setChecked(true);
                 })
                 .setNegativeButton("Point", (dialogInterface, i) -> {
-                    clearAll();
 
-                    isNavigation=false;
                     setMarker();
                 })
                 .create();
@@ -2157,6 +2319,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
     private void shareAppLink() {
+        Toast.makeText(this, "Select An App To Share App Link", Toast.LENGTH_SHORT).show();
         String link=sharedPreferences.getString("app_link","");
         if(link.isEmpty()) {
             DynamicLink dynamicLink = FirebaseDynamicLinks.getInstance().createDynamicLink()
@@ -2196,7 +2359,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void setMarker() {
 
-
+        clearAll();
+        isNavigation=false;
         Toast.makeText(MapsActivity.this, "Click On The Map To Select A Location!", Toast.LENGTH_SHORT).show();
 
         shareLocationFabVisisble(true);
@@ -2223,10 +2387,59 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             MarkerOptions markerOptions=new MarkerOptions();
             markerOptions.position(latLng);
             markerOptions.draggable(false);
+            markerOptions.anchor(0.5f, 0.5f);
             markerOptions.title(title);
-            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+            markerOptions.icon(BitmapDescriptorFactory.fromBitmap(RealTimeViewActivity.createCustomMarker(MapsActivity.this,getResources().getDrawable(R.drawable.marker_red))));
             mMap.addMarker(markerOptions);
 
+
+    }
+    final int radius = 500;
+    GroundOverlay circle;
+
+    private void getCircle(LatLng latLng) {
+        GradientDrawable d = new GradientDrawable();
+        d.setShape(GradientDrawable.OVAL);
+        d.setSize(500,500);
+
+        d.setColor(0x555751FF);
+        d.setStroke(5, Color.TRANSPARENT);
+
+        Bitmap bitmap = Bitmap.createBitmap(d.getIntrinsicWidth()
+                , d.getIntrinsicHeight()
+                , Bitmap.Config.ARGB_8888);
+
+        // Convert the drawable to bitmap
+        Canvas canvas = new Canvas(bitmap);
+        d.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        d.draw(canvas);
+
+        // Radius of the circle
+
+
+        // Add the circle to the map
+        circle  = mMap.addGroundOverlay(new GroundOverlayOptions()
+                .position(latLng, 2 * radius).image(BitmapDescriptorFactory.fromBitmap(bitmap)));
+        animateCircler();
+    }
+
+    private void animateCircler() {
+        ValueAnimator valueAnimator = new ValueAnimator();
+        valueAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        valueAnimator.setRepeatMode(ValueAnimator.RESTART);
+        valueAnimator.setIntValues(0, radius);
+        valueAnimator.setDuration(3000);
+        valueAnimator.setEvaluator(new IntEvaluator());
+        valueAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                float animatedFraction = valueAnimator.getAnimatedFraction();
+                circle.setDimensions(animatedFraction * radius * 2);
+            }
+        });
+
+        valueAnimator.start();
     }
 
     public void cancelLocationShare(View view) {
@@ -2330,9 +2543,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
     }
-
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        mapView.onLowMemory();
+    }
     @Override
     protected void onDestroy() {
+        mapView.onDestroy();
         super.onDestroy();
         if(mBounds){
             unbindService(mServiceConnection);
@@ -2342,7 +2560,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .unregisterOnSharedPreferenceChangeListener(this);
         removeAllDialog();
         audioMute(false);
-        navigation.onDestroy();
+
     }
 
     public void startNavigate(View view) {
@@ -2390,9 +2608,260 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         DecryptResult result = getCryptore(getInstance(),id).decrypt(encryptedByte, null);
         return new String(result.getBytes());
     }
-    
+
+
+    public void deleteUserData(View view) {
+        checkDeleteAccount();
+
+    }
+
+    private void checkDeleteAccount() {
+        progressBar=new ProgressBar(MapsActivity.this,"Deleting Account...");
+
+
+        new InputSheet().show(MapsActivity.this, LinearLayout.LayoutParams.MATCH_PARENT, new Function1<InputSheet, Unit>() {
+            @Override
+            public Unit invoke(InputSheet inputSheet) {
+                inputSheet.setCancelable(false);
+                inputSheet.onPositive("delete", new Function1<Bundle, Unit>() {
+                    @Override
+                    public Unit invoke(Bundle bundle) {
+
+                       if( bundle.getBoolean("accountCB")){
+                           Toast.makeText(MapsActivity.this, "deleteAll", Toast.LENGTH_SHORT).show();
+                           deleteAllData();
+                           return null;
+                       }
+                        if( bundle.getBoolean("deleteAll")){
+                            Toast.makeText(MapsActivity.this, "deleteAllUploaded", Toast.LENGTH_SHORT).show();
+                            deleteAllUploaded();
+                            return null;
+                        }
+                        if( bundle.getBoolean("cropsCB")){
+                            Toast.makeText(MapsActivity.this, "delete All cropsCB", Toast.LENGTH_SHORT).show();
+                         deleteUserCrops();
+
+                        }
+                        if( bundle.getBoolean("placesCB")){
+                            Toast.makeText(MapsActivity.this, "delete All placesCB", Toast.LENGTH_SHORT).show();
+                           deleteUserPlaces();
+
+                        }
+                        if( bundle.getBoolean("routesCB")){
+                            Toast.makeText(MapsActivity.this, "delete All  routesCB", Toast.LENGTH_SHORT).show();
+                            deleteUserRoutes();
+                        }
+
+                        if( bundle.getBoolean("areasCB")){
+                            Toast.makeText(MapsActivity.this, "delete All areasCB", Toast.LENGTH_SHORT).show();
+                            deleteUserArea();
+                        }
+
+
+                        return null;
+                    }
+                });
+                return null;
+            }
+        }).with(new InputSeparator("separator", new Function1<InputSeparator, Unit>() {
+            @Override
+            public Unit invoke(InputSeparator inputSeparator) {
+                inputSeparator.label("What you want to delete?");
+                return null;
+            }
+        }),new InputCheckBox("placesCB", new Function1<InputCheckBox, Unit>() {
+            @Override
+            public Unit invoke(InputCheckBox inputCheckBox) {
+                inputCheckBox.text("places");
+
+                return null;
+            }
+        }),new InputCheckBox("routesCB", new Function1<InputCheckBox, Unit>() {
+            @Override
+            public Unit invoke(InputCheckBox inputCheckBox) {
+                inputCheckBox.text("routes");
+                return null;
+            }
+        }),new InputCheckBox("areasCB", new Function1<InputCheckBox, Unit>() {
+            @Override
+            public Unit invoke(InputCheckBox inputCheckBox) {
+                inputCheckBox.text("areas");
+
+                return null;
+            }
+        }),new InputCheckBox("cropsCB", new Function1<InputCheckBox, Unit>() {
+            @Override
+            public Unit invoke(InputCheckBox inputCheckBox) {
+                inputCheckBox.text("crops");
+
+                return null;
+            }
+        }),new InputCheckBox("deleteAll", new Function1<InputCheckBox, Unit>() {
+            @Override
+            public Unit invoke(InputCheckBox inputCheckBox) {
+                inputCheckBox.text("delete all");
+
+                return null;
+            }
+        }),new InputSeparator("sep", new Function1<InputSeparator, Unit>() {
+            @Override
+            public Unit invoke(InputSeparator inputSeparator) {
+                inputSeparator.label("or");
+                return null;
+            }
+        }),new InputCheckBox("accountCB", new Function1<InputCheckBox, Unit>() {
+            @Override
+            public Unit invoke(InputCheckBox inputCheckBox) {
+                inputCheckBox.text("delete account");
+                return null;
+            }
+        }));
+    }
+
+    private void deleteAllUploaded() {
+        deleteUserCrops();
+        deleteUserRoutes();
+        deleteUserPlaces();
+        deleteUserArea();
+    }
+
+    ProgressBar progressBar;
+    private void deleteAllData() {
+        deleteFirebaseAccount();
+        deleteUserInfo();
+         deleteAllUploaded();
+        deleteUserLocationUpdates();
 
 
 
+    }
 
+    private void deleteFirebaseAccount() {
+        progressBar.show();
+        fuser.describeContents();
+        fuser.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                Log.e(TAG,"Firebase Account Deleted");
+                deleteGoogleAccount();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull @NotNull Exception e) {
+                Log.e(TAG,"Firebase Account Deletion Failed");
+                progressBar.hide();
+            }
+        });
+    }
+
+    private void deleteGoogleAccount() {
+        progressBar.setMessage("deleting account");
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.google_client_id))
+                .requestEmail()
+                .build();
+       GoogleSignIn.getClient(this, gso).signOut()
+               .addOnCompleteListener(this, new OnCompleteListener<Void>() {
+                   @Override
+                   public void onComplete(@NonNull Task<Void> task) {
+                       guser=null;
+                       progressBar.hide();
+                       Log.e(TAG,"Google Account Deleted");
+                       Toast.makeText(MapsActivity.this, "Account Deleted", Toast.LENGTH_SHORT).show();
+                       startActivity(new Intent(MapsActivity.this,SignInActivity.class));
+                       finish();
+
+                   }
+               }).addOnFailureListener(new OnFailureListener() {
+           @Override
+           public void onFailure(@NonNull @NotNull Exception e) {
+               Log.e(TAG,"Google Account Deletion Failed");
+               progressBar.hide();
+           }
+       });
+    }
+
+
+    private void deleteUserLocationUpdates() {
+        new FireBase().getReferenceLocationUpdate().child(fuser.getUid()).removeValue(new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
+                
+            }
+        });
+    }
+
+    private void deleteUserArea() {
+
+
+        progressBar.setMessage("deleting areas ");
+        progressBar.show();
+        new FireBase().getReferenceDataArea().child(fuser.getUid()).removeValue(new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
+                Log.e(TAG,"area deleted");
+                if(areaModelList!=null){
+                    areaModelList.clear();
+                }
+                progressBar.hide();
+            }
+        });
+    }
+
+    private void deleteUserPlaces() {
+        progressBar.setMessage("deleting places ");
+        progressBar.show();
+        new FireBase().getReferenceDataPlace().child(fuser.getUid()).removeValue(new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
+                Log.e(TAG,"places deleted");
+                if(placeModelList!=null){
+                    placeModelList.clear();
+                }
+                progressBar.hide();
+            }
+        });
+    }
+
+    private void deleteUserRoutes() {
+        progressBar.setMessage("deleting routes ");
+        progressBar.show();
+        new FireBase().getReferenceDataPolyLine().child(fuser.getUid()).removeValue(new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
+                Log.e(TAG,"routes deleted");
+                if(routeModelList!=null){
+                    routeModelList.clear();
+                }
+                progressBar.hide();
+            }
+        });
+    }
+
+    private void deleteUserCrops() {
+        progressBar.setMessage("deleting crops ");
+        progressBar.show();
+        new FireBase().getReferenceCrops().child(fuser.getUid()).removeValue(new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
+                Log.e(TAG,"crops deleted");
+                if(cropList!=null){
+                    cropList.clear();
+                }
+                progressBar.hide();
+            }
+        });
+    }
+
+    private void deleteUserInfo() {
+        progressBar.setMessage("deleting account");
+        progressBar.show();
+        new FireBase().getReferenceUsers().child(fuser.getUid()).removeValue(new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
+                Log.e(TAG,"user details deleted");
+                progressBar.hide();
+            }
+        });
+    }
 }

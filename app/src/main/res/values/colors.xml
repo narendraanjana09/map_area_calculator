@@ -8,15 +8,14 @@
     <color name="black">#FF000000</color>
     <color name="dark">#403E3E</color>
     <color name="dark_grey">#34495E</color>
+    <color name="dark_grey_light">#4D6985</color>
     <color name="light_blue">#27BEC4</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="whitelight">#C1C1C1</color>
     <color name="colorPrimary">#33C377</color>
     <color name="colorPrimaryDark">#FF218450</color>
     <color name="colorAccent">#FF4081</color>
-    <color name="mapboxWhite">#ffffff</color>
-    <color name="mapboxBlue">#4264fb</color>
-    <color name="mapboxGrayLight">#c6d2e1</color>
-    <color name="mapboxPink">#ee4e8b</color>
-    <color name="mapboxYellow">#d9d838</color>
-    <color name="mapboxRed">#b43b71</color>
+
+
+    <color name="mtrl_textinput_default_box_stroke_color">#fff</color>
 </resources>

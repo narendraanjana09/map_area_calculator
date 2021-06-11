@@ -3,16 +3,20 @@ package com.nsa.mapsspeech.Activities;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentActivity;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.CompositePageTransformer;
 import androidx.viewpager2.widget.MarginPageTransformer;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -34,12 +38,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.Toolbar;
+
 
 
 import com.android.volley.Request;
@@ -48,6 +53,8 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.daimajia.androidanimations.library.Techniques;
+import com.daimajia.androidanimations.library.YoYo;
 import com.github.dhaval2404.imagepicker.ImagePicker;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -58,6 +65,7 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -76,9 +84,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.appbar.MaterialToolbar;
+
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -95,13 +107,21 @@ import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
+import com.nsa.mapsspeech.Adapter.ViewCropsAdapter;
 import com.nsa.mapsspeech.Adapter.ViewPagerAdapter;
 import com.nsa.mapsspeech.ExtraClasses.FireBase;
 import com.nsa.mapsspeech.ExtraClasses.ProgressBar;
 import com.nsa.mapsspeech.ExtraClasses.Storage;
+import com.nsa.mapsspeech.Model.CropModel;
 import com.nsa.mapsspeech.Model.PlaceModel;
 import com.nsa.mapsspeech.Model.RouteModel;
 import com.nsa.mapsspeech.R;
+import com.skydoves.balloon.ArrowOrientation;
+import com.skydoves.balloon.ArrowPositionRules;
+import com.skydoves.balloon.Balloon;
+import com.skydoves.balloon.BalloonAnimation;
+import com.skydoves.balloon.BalloonSizeSpec;
+import com.skydoves.balloon.OnBalloonClickListener;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
@@ -109,20 +129,22 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
 import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
+import static com.nsa.mapsspeech.Activities.MapsActivity.MAP_VIEW_BUNDLE_KEY;
 import static com.nsa.mapsspeech.Activities.MapsActivity.getRoundValue;
-import static com.nsa.mapsspeech.Directions.GetPathFromLocation.API_KEY;
+import static com.nsa.mapsspeech.ExtraClasses.BalloonText.getBalloon;
 
 public class AddOnMap extends FragmentActivity implements
         OnMapReadyCallback, GoogleMap.OnMapClickListener,
-        GoogleMap.OnMarkerClickListener {
+        GoogleMap.OnMarkerClickListener, View.OnLongClickListener, NavigationView.OnNavigationItemSelectedListener, ChipGroup.OnCheckedChangeListener {
 
     private static final String TAG = "ADDOnMap";
     private static final String TASK_LOCATION = "location";
-    private static final String TASK_POLYLINE = "polyline";
+    private static final String TASK_ROUTE = "polyline";
     private static final String TASK_AREA = "area";
     List<AlertDialog> dialogList;
 
@@ -135,24 +157,36 @@ public class AddOnMap extends FragmentActivity implements
 
 
     private GoogleMap mMap;
+    private MapView mapView;
     private LatLng currentLatLng = null, selectedLocation = null;
     FusedLocationProviderClient providerClient;
     String task = "";
-    FloatingActionButton fabDone, fabCancel, fabViewData,fabPlayPause;
+     FloatingActionButton fabDone, fabCancel,
+           fabViewData,fabPlayPause
+                       ,fabAddPlace,fabAddRoute,fabAddArea;
+     boolean fabViewDataBulloonShowed=false,fabPlayPauseBullooneShowed=false
+         ,fabAddPlaceBulloonShowed=false,fabAddRouteBullooneShowed=false,
+                fabAddAreaBalloonShowed=false;
     TextView placesCountTV, routesCountTv, areaCountTv, infoTV;
     LinearLayout zoomLayout, addLayout;
     RelativeLayout images_layout;
     ProgressBar progressBar;
 
-    List<PlaceModel> placeModelList;
+     public static List<PlaceModel> placeModelList;
     private String placeName = "";
     private String placeDate = "";
-    FirebaseUser fUser;
+    public static FirebaseUser fUser;
     String date;
 
     private long UPDATE_INTERVAL = 1000;  /* 1 secs */
     private long FASTEST_INTERVAL = 500;
     private LocationRequest mLocationRequest;
+
+
+    public static List<CropModel> cropList=new ArrayList<>();
+    HorizontalScrollView kharifScrollView;
+    ChipGroup kharifChips;
+
 
 
 
@@ -161,13 +195,26 @@ public class AddOnMap extends FragmentActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_on_map);
+
         providerClient = getFusedLocationProviderClient(AddOnMap.this);
 
+        Bundle mapViewBundle = null;
+        if (savedInstanceState != null) {
+            mapViewBundle = savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        }
 
-        getPermissions();
+        mapView = findViewById(R.id.map_vieww);
+        mapView.onCreate(mapViewBundle);
+        mapView.getMapAsync(this);
+        getDrawer();
+
         placeModelList = new ArrayList<>();
         fUser = FirebaseAuth.getInstance().getCurrentUser();
         fabDone = findViewById(R.id.fabDone);
+
+        kharifChips=findViewById(R.id.kharif_chips);
+        kharifScrollView=findViewById(R.id.kharifCropsView);
+        kharifChips.setOnCheckedChangeListener(this);
 
         images_layout = findViewById(R.id.images_layout);
         addImagesTextTV = findViewById(R.id.addImagesTxt);
@@ -186,6 +233,15 @@ public class AddOnMap extends FragmentActivity implements
         placesCountTV = findViewById(R.id.placeCountTextView);
         routesCountTv = findViewById(R.id.routesCountTextView);
         fabPlayPause = findViewById(R.id.fabPlayPause);
+
+        fabAddPlace=findViewById(R.id.fabAddPlace);
+        fabAddRoute=findViewById(R.id.fabAddRoute);
+        fabAddArea=findViewById(R.id.fabAddArea);
+
+        fabAddPlace.setOnLongClickListener(this);
+        fabAddRoute.setOnLongClickListener(this);
+        fabAddArea.setOnLongClickListener(this);
+
         infoTV = findViewById(R.id.infoTextView);
 
         fabCancel = findViewById(R.id.fabCancel);
@@ -196,11 +252,92 @@ public class AddOnMap extends FragmentActivity implements
         zoomLayout = findViewById(R.id.zoomLayout);
         addLayout = findViewById(R.id.addLayout);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+
+        getFromFirebase();
+    }
+
+    private void getFromFirebase() {
+        getUploadedCropsList();
+        getUploadedLocations(false);
+        getUploadedRoutes(true,false);
+        getUploadedRoutes(false,false);
+    }
+
+    private void getUploadedCropsList() {
+        Log.e(TAG," getting Crops data"+cropList);
+        new FireBase().getReferenceCrops().getRef().child(fUser.getUid())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull @NotNull DataSnapshot snapshot) {
+                        if(snapshot.exists()){
+                            cropList.clear();
+                            for(DataSnapshot dataSnapshot:snapshot.getChildren()){
+                                CropModel model=dataSnapshot.getValue(CropModel.class);
+                                cropList.add(model);
+                            }
+                            Log.e(TAG,"Crops List "+cropList);
+                        }else{
+                            Log.e(TAG," not Crops data"+cropList);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull @NotNull DatabaseError error) {
+
+                    }
+                });
+    }
+
+    DrawerLayout drawer;
+    NavigationView navigationView;
+    private void getDrawer() {
+        Toolbar toolbar = findViewById(R.id.toolbar );
+         drawer= findViewById(R.id.addonmap_drawer_layout ) ;
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer , toolbar , R.string. navigation_drawer_open ,
+                R.string. navigation_drawer_close ) ;
+        drawer.addDrawerListener(toggle) ;
+        toggle.syncState() ;
+        navigationView= findViewById(R.id.addonmap_navigation_view ) ;
+        navigationView.setNavigationItemSelectedListener( this ) ;
 
     }
+    @Override
+    public void onBackPressed () {
+
+        if (drawer.isDrawerOpen(GravityCompat. START )) {
+            drawer.closeDrawer(GravityCompat. START ) ;
+        } else {
+            super .onBackPressed() ;
+        }
+    }
+    @Override
+    public boolean onCreateOptionsMenu (Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.addonmap_menu_drawer , menu) ;
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected (MenuItem item) {
+        int id = item.getItemId() ;
+
+        return super .onOptionsItemSelected(item) ;
+    }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        Bundle mapViewBundle = outState.getBundle(MAP_VIEW_BUNDLE_KEY);
+        if (mapViewBundle == null) {
+            mapViewBundle = new Bundle();
+            outState.putBundle(MAP_VIEW_BUNDLE_KEY, mapViewBundle);
+        }
+
+        mapView.onSaveInstanceState(mapViewBundle);
+    }
+
     RequestQueue mRequestQueue;
     public RequestQueue getRequestQueue() {
         //requestQueue is used to stack your request and handles your cache.
@@ -209,41 +346,45 @@ public class AddOnMap extends FragmentActivity implements
         }
         return mRequestQueue;
     }
-    @SuppressLint("MissingPermission")
+
+    @Override
+    protected void onStart() {
+        mapView.onStart();
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        mapView.onStop();
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        mapView.onDestroy();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onLowMemory() {
+        mapView.onLowMemory();
+        super.onLowMemory();
+    }
+
     @Override
     protected void onResume() {
+        mapView.onResume();
         super.onResume();
 
     }
 
     @Override
     protected void onPause() {
+        mapView.onPause();
         super.onPause();
     }
 
 
-    private void getPermissions() {
-        Dexter.withContext(this)
-                .withPermissions(
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.CAMERA
-                ).withListener(new MultiplePermissionsListener() {
-            @Override
-            public void onPermissionsChecked(MultiplePermissionsReport report) {
-                if (report.areAllPermissionsGranted()) {
-                    Log.e(TAG,"permission granted");
-                }
-
-            }
-
-            @Override
-            public void onPermissionRationaleShouldBeShown(List<PermissionRequest> list, PermissionToken permissionToken) {
-
-            }
-
-        }).check();
-    }
 
     private void setTransformer() {
         CompositePageTransformer transformer=new CompositePageTransformer();
@@ -272,6 +413,8 @@ public class AddOnMap extends FragmentActivity implements
 
         Log.e(TAG, "on map ready");
         getLastLocation();
+
+
 
     }
 
@@ -311,10 +454,21 @@ public class AddOnMap extends FragmentActivity implements
         mMap.animateCamera(CameraUpdateFactory.zoomOut());
     }
 
-    boolean mapTypeChanged=false;
+    boolean mapTypeChanged=false,fabMapTypeChangeBalloonShowed=false;
+
     public void changeMapType(View view) {
-
-
+          if(!fabMapTypeChangeBalloonShowed) {
+            getBalloon("change map type", AddOnMap.this)
+                    .setArrowOrientation(ArrowOrientation.RIGHT)
+                    .setOnBalloonClickListener(new OnBalloonClickListener() {
+                        @Override
+                        public void onBalloonClick(@NotNull View view) {
+                            fabMapTypeChangeBalloonShowed=true;
+                            changeMapType(null);
+                            Log.e(TAG,"BaloonCLicked");
+                        }
+                    }).build().showAlignLeft(findViewById(R.id.fabChangeMapType));
+        }else{
         if (mapTypeChanged) {
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             mapTypeChanged = false;
@@ -322,6 +476,7 @@ public class AddOnMap extends FragmentActivity implements
             mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
             mapTypeChanged = true;
         }
+          }
 
     }
 
@@ -354,7 +509,7 @@ public class AddOnMap extends FragmentActivity implements
 
 
 
-        }else if(task.equals(TASK_POLYLINE)){
+        }else if(task.equals(TASK_ROUTE)){
             if(polyLineList.size()<2){
                 Toast.makeText(this, "Please select more than one point", Toast.LENGTH_SHORT).show();
                 return;
@@ -402,7 +557,7 @@ public class AddOnMap extends FragmentActivity implements
     private void uploadRoute(boolean isRoute) {
         date =new SimpleDateFormat("ddMMyyyyHHmmss").format(new Date());
         String route=PolyUtil.encode(polyLineList);
-        RouteModel model=new RouteModel(placeName,placeDate,route);
+        RouteModel model=new RouteModel(date,placeName,placeDate,route);
         DatabaseReference reference=null;
         if(isRoute){
             reference=new FireBase().getReferenceDataPolyLine();
@@ -414,6 +569,11 @@ public class AddOnMap extends FragmentActivity implements
                     @Override
                     public void onSuccess(Void unused) {
                         progressBar.hide();
+                        if(isRoute){
+                            routeModelList.add(model);
+                        }else {
+                            areaModelList.add(model);
+                        }
                         Toast.makeText(AddOnMap.this, "Uploaded", Toast.LENGTH_SHORT).show();
                         fabCancel.callOnClick();
                     }
@@ -447,6 +607,7 @@ public class AddOnMap extends FragmentActivity implements
     private void getPlaceName(String message) {
         EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
+        editText.setTextColor(Color.WHITE);
         AlertDialog dialog = new AlertDialog.Builder(AddOnMap.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle("Place Name!")
                 .setMessage(message)
@@ -460,6 +621,8 @@ public class AddOnMap extends FragmentActivity implements
 
 
                     }else{
+                        mMap.clear();
+                        changeButtonsVisibility();
                         placeDate=getDayMonthYear();
                         fabViewData.setVisibility(View.INVISIBLE);
                         mMap.setOnMapClickListener(AddOnMap.this);
@@ -469,7 +632,6 @@ public class AddOnMap extends FragmentActivity implements
                 })
                 .setNegativeButton(getResources().getString(R.string.cancel_text), (dialogInterface, i) -> {
                         placeName="";
-
                     fabCancel.callOnClick();
                 })
                 .create();
@@ -497,7 +659,7 @@ public class AddOnMap extends FragmentActivity implements
             noImages=true;
             imagesList.add("null");
         }
-        PlaceModel model=new PlaceModel(selectedLocation.latitude+"",selectedLocation.longitude+""
+        PlaceModel model=new PlaceModel(date,selectedLocation.latitude+"",selectedLocation.longitude+""
                                     ,placeName,placeDate,imagesList);
         if(noImages){
             progressBar.setTitle("Uploading...");
@@ -593,6 +755,7 @@ public class AddOnMap extends FragmentActivity implements
         new FireBase().getReferenceDataPlace().child(fUser.getUid()).child(date).setValue(model).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void unused) {
+                placeModelList.add(model);
                 Toast.makeText(AddOnMap.this, "Place Data Uploaded", Toast.LENGTH_SHORT).show();
                 progressBar.hide();
                 fabCancel.callOnClick();
@@ -677,19 +840,32 @@ public class AddOnMap extends FragmentActivity implements
     }
 
     public void addLocation(View view) {
-
+         if(!fabAddPlaceBulloonShowed) {
+            getBalloon("add or view places", AddOnMap.this)
+                    .setArrowOrientation(ArrowOrientation.TOP)
+                    .setOnBalloonClickListener(new OnBalloonClickListener() {
+                        @Override
+                        public void onBalloonClick(@NotNull View view) {
+                            fabAddPlaceBulloonShowed=true;
+                            addLocation(null);
+                            Log.e(TAG,"BaloonCLicked");
+                        }
+                    }).build().showAlignTop(fabAddPlace);
+        }else{
+        task=TASK_LOCATION;
         if(viewData){
-           clearAll();
-            getUploadedLocations();
+            mMap.setOnMarkerClickListener(AddOnMap.this);
+            showPlacesOnMap();
             return;
         }
-        changeButtonsVisibility();
+
         getPlaceName("What is the name of selected place?");
-        task=TASK_LOCATION;
+
         Log.e(TAG,"task "+task);
+         }
     }
 
-    private void getUploadedLocations() {
+    private void getUploadedLocations(boolean refresh) {
         progressBar.setTitle("Checking...");
         progressBar.show();
         new FireBase().getReferenceDataPlace()
@@ -706,13 +882,10 @@ public class AddOnMap extends FragmentActivity implements
                                 placeModelList.add(model);
                             }
                             mMap.setOnMarkerClickListener(AddOnMap.this);
-                            task=TASK_LOCATION;
                             placesCountTV.setText(placeModelList.size()+"");
-                            showPlacesOnMap();
-                            Toast.makeText(getApplicationContext(), "Click On The Marker To See More Details", Toast.LENGTH_SHORT).show();
 
                         }else{
-                            Toast.makeText(AddOnMap.this, "No Data Available!", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG,"no data available");
                         }
                         progressBar.hide();
                     }
@@ -728,6 +901,14 @@ public class AddOnMap extends FragmentActivity implements
 
 
     private void showPlacesOnMap() {
+        mMap.clear();
+        infoTV.setVisibility(View.INVISIBLE);
+        if(placeModelList.size()==0){
+            Toast.makeText(this, "No Places Were uploaded!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        getListSnackBar("places");
         for(PlaceModel model:placeModelList){
             selectedLocation=new LatLng(Double.parseDouble(model.getLat()),Double.parseDouble(model.getLng()));
             placeName=model.getPlaceName();
@@ -741,19 +922,38 @@ public class AddOnMap extends FragmentActivity implements
     }
 
     public void addRoute(View view) {
+
+
+        if(!fabAddRouteBullooneShowed) {
+            getBalloon("add or view routes", AddOnMap.this)
+                    .setArrowOrientation(ArrowOrientation.TOP)
+                    .setOnBalloonClickListener(new OnBalloonClickListener() {
+                        @Override
+                        public void onBalloonClick(@NotNull View view) {
+                            fabAddRouteBullooneShowed=true;
+                            addRoute(null);
+                            Log.e(TAG,"BaloonCLicked");
+                        }
+                    }).build().showAlignTop(fabAddRoute);
+
+        }else{
+            task=TASK_ROUTE;
         if(viewData){
-            clearAll();
-            getUploadedRoutes(true);
+            mMap.setOnMarkerClickListener(AddOnMap.this);
+
+            showRoutesOnMap();
             return;
         }
        getPolylineName("Give This Route A Name");
-        task=TASK_POLYLINE;
+
         Log.e(TAG,"task "+task);
+        }
     }
 
     private void getPolylineName(String message) {
         EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
+        editText.setTextColor(Color.WHITE);
         AlertDialog dialog = new AlertDialog.Builder(AddOnMap.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle("Route Name!")
                 .setMessage(message)
@@ -763,10 +963,11 @@ public class AddOnMap extends FragmentActivity implements
 
                     placeName = editText.getText().toString();
                     if(placeName.isEmpty()){
-                        getPlaceName("Please Give Route A Name!");
+                        getPolylineName("Please Give Route A Name!");
 
 
                     }else{
+                        mMap.clear();
                         placeDate=getDayMonthYear();
                         fabViewData.setVisibility(View.INVISIBLE);
                       getHowPolyLineCreated();
@@ -778,7 +979,6 @@ public class AddOnMap extends FragmentActivity implements
                     placeName="";
                     placeDate="";
                     mMap.setOnMapClickListener(null);
-                    changeButtonsVisibility();
 
                 })
                 .create();
@@ -803,8 +1003,9 @@ public class AddOnMap extends FragmentActivity implements
     }
 
 
-    List<RouteModel> routeModelList=new ArrayList<>();
-    private void getUploadedRoutes(boolean isRoute) {
+    public static List<RouteModel> routeModelList=new ArrayList<>();
+   public static List<RouteModel> areaModelList=new ArrayList<>();
+    private void getUploadedRoutes(boolean isRoute,boolean refresh) {
         progressBar.setTitle("Checking...");
         progressBar.show();
         DatabaseReference reference=null;
@@ -818,32 +1019,44 @@ public class AddOnMap extends FragmentActivity implements
                     @Override
                     public void onDataChange(@NonNull @NotNull DataSnapshot snapshot) {
                         if(snapshot.exists()){
-                            routeModelList.clear();
+                            if(isRoute){
+                                routeModelList.clear();
+                            }else{
+                                areaModelList.clear();
+                            }
                             Log.e(TAG,"routes Available");
                             for(DataSnapshot dataSnapshot:snapshot.getChildren()){
                                 Log.e(TAG,"Data Available datasnapshot");
                                 RouteModel model=dataSnapshot.getValue(RouteModel.class);
+                                if(isRoute){
                                 routeModelList.add(model);
+                               }else{
+                                    areaModelList.add(model);
+                                }
+
                             }
-                            mMap.setOnMarkerClickListener(AddOnMap.this);
-                            infoTV.setVisibility(View.VISIBLE);
-                            infoTV.setText("");
+
                             if(isRoute){
-                                task=TASK_POLYLINE;
-
                                 routesCountTv.setText(routeModelList.size()+"");
-                                showRoutesOnMap();
+                                if(refresh){
+                                    task=TASK_ROUTE;
+                                    showRoutesOnMap();
+                                }
+
                             }else{
-                                task=TASK_AREA;
-                                areaCountTv.setText(routeModelList.size()+"");
-                                showAreaOnMap();
+                                if(refresh){
+                                    task=TASK_AREA;
+                                    showAreaOnMap();
+                                }
+
+                                areaCountTv.setText(areaModelList.size()+"");
+
 
 
                             }
-                            Toast.makeText(getApplicationContext(), "Click On The Marker To See More Details", Toast.LENGTH_SHORT).show();
 
                         }else{
-                            Toast.makeText(AddOnMap.this, "No Data Available!", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "No Data Available!");
                         }
                         progressBar.hide();
                     }
@@ -857,14 +1070,32 @@ public class AddOnMap extends FragmentActivity implements
                 });
     }
 
-    private void showAreaOnMap() {
-        for(RouteModel model:routeModelList){
+    private void showAreaOnMap(){
+        mMap.clear();
+        SqMeter=0;
+        Biga=0;
+        if(areaModelList.size()==0){
+            Toast.makeText(this, "No Area Uploaded", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        getListSnackBar("areas");
+        infoTV.setVisibility(View.VISIBLE);
+        infoTV.setText("");
+        for(RouteModel model:areaModelList){
             List<LatLng> points=PolyUtil.decode(model.getPoints());
             addMarker(points.get(0),model.getName(),model.getDate());
-            String text=getStringAreaText(SphericalUtil.computeArea(points));
+            String text=getStringAreaText(getArea(points));
             addMarker(points.get(points.size()-1),model.getName(),text);
             showPolygon(points);
         }
+    }
+    public static double getArea(List<LatLng> points){
+        return SphericalUtil.computeArea(points);
+    }
+    public static double getAreaBigha(List<LatLng> list){
+        double computeArea=getArea(list);
+        double default_area= 2327.0579;
+        return  getRoundValue((computeArea/default_area));
     }
 
     double SqMeter=0;
@@ -898,6 +1129,20 @@ public class AddOnMap extends FragmentActivity implements
     double meter=0;
     double feet=0;
     private void showRoutesOnMap() {
+        mMap.clear();
+         km=0;
+         meter=0;
+         feet=0;
+         if(routeModelList.size()==0){
+             Toast.makeText(this, "No Routes Uploaded!", Toast.LENGTH_SHORT).show();
+             return;
+         }
+
+        getListSnackBar("routes");
+
+
+        infoTV.setVisibility(View.VISIBLE);
+        infoTV.setText("");
         for(RouteModel model:routeModelList){
             List<LatLng> points=PolyUtil.decode(model.getPoints());
             addMarker(points.get(0),model.getName(),model.getDate());
@@ -917,6 +1162,26 @@ public class AddOnMap extends FragmentActivity implements
         }
     }
 
+    private void getListSnackBar(String routes) {
+        Snackbar snackbar
+                = Snackbar
+                .make(drawer, "Show List", Snackbar.LENGTH_LONG)
+                .setAction("open list",
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                Intent intent = new Intent(AddOnMap.this, ViewListActivity.class);
+                                intent.putExtra("query", routes);
+                                startActivity(intent);
+                            }
+                        });
+        snackbar.setDuration(5000);
+        snackbar.setActionTextColor(Color.WHITE);
+        snackbar.setTextColor(Color.WHITE);
+        snackbar.setBackgroundTint(Color.BLACK);//getResources().getColor(R.color.teal_200));
+        snackbar.show();
+    }
+
 
     private void showPolyLine(List<LatLng> points) {
         PolylineOptions options=new PolylineOptions();
@@ -929,19 +1194,34 @@ public class AddOnMap extends FragmentActivity implements
 
 
     public void addArea(View view) {
+          if(!fabAddAreaBalloonShowed) {
+            getBalloon("add or view area", AddOnMap.this)
+                    .setArrowOrientation(ArrowOrientation.TOP)
+                    .setOnBalloonClickListener(new OnBalloonClickListener() {
+                        @Override
+                        public void onBalloonClick(@NotNull View view) {
+                            fabAddAreaBalloonShowed=true;
+                            addArea(null);
+                            Log.e(TAG,"BaloonCLicked");
+
+                        }
+                    }).build().showAlignTop(fabAddArea);
+        }else{
+        task=TASK_AREA;
         if(viewData){
-            clearAll();
-           getUploadedRoutes(false);
+            mMap.setOnMarkerClickListener(AddOnMap.this);
+
+            showAreaOnMap();
             return;
         }
         getAreaName("Give This Area A Name!");
-        task=TASK_AREA;
-        Log.e(TAG,"task "+task);
+        Log.e(TAG,"task "+task);}
     }
 
     private void getAreaName(String message) {
         EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
+        editText.setTextColor(Color.WHITE);
         AlertDialog dialog = new AlertDialog.Builder(AddOnMap.this,AlertDialog.THEME_DEVICE_DEFAULT_DARK)
                 .setTitle("Area Name!")
                 .setMessage(message)
@@ -951,10 +1231,11 @@ public class AddOnMap extends FragmentActivity implements
 
                     placeName = editText.getText().toString();
                     if(placeName.isEmpty()){
-                        getPlaceName("Please Give Area A Name!");
+                        getAreaName("Please Give Area A Name!");
 
 
                     }else{
+                        mMap.clear();
                         placeDate=getDayMonthYear();
                         fabViewData.setVisibility(View.INVISIBLE);
                         mMap.setOnMapClickListener(AddOnMap.this);
@@ -967,7 +1248,6 @@ public class AddOnMap extends FragmentActivity implements
                     placeName="";
                     placeDate="";
                     mMap.setOnMapClickListener(null);
-                    changeButtonsVisibility();
 
                 })
                 .create();
@@ -982,21 +1262,46 @@ public class AddOnMap extends FragmentActivity implements
             mMap.clear();
             selectedLocation = latLng;
             addMarker(selectedLocation, placeName, placeDate);
-        }else if(task.equals(TASK_POLYLINE)){
+        }else if(task.equals(TASK_ROUTE)){
             addMarker(latLng, placeName, "");
+//            if(polyLineList.size()!=0){
+//                addFlagMarker(polyLineList.get(polyLineList.size()-1));
+//            }
              polyLineList.add(latLng);
              showLengthToUser(polyLineList);
              getPoyLine();
         }else if(task.equals(TASK_AREA)){
             addMarker(latLng, "", "");
+//            if(polyLineList.size()!=0){
+//                addFlagMarker(polyLineList.get(polyLineList.size()-1));
+//            }
             polyLineList.add(latLng);
             calculateAreaofPolygon();
+            getPoyLine();
 
         }
     }
+
+    private void addFlagMarker(LatLng latLng) {
+        MarkerOptions markerOptions=new MarkerOptions();
+        markerOptions.position(latLng);
+        markerOptions.anchor(0.3f, 0.3f);
+        markerOptions.draggable(false);
+        markerOptions.icon(BitmapDescriptorFactory.fromBitmap(RealTimeViewActivity.createCustomMarker(AddOnMap.this,getResources().getDrawable(R.drawable.flag))));
+        mMap.addMarker(markerOptions);
+    }
+
     Polygon areaPolygon=null;
+    int count=0;
     private void calculateAreaofPolygon() {
         PolygonOptions polygonOptions=new PolygonOptions();
+        if(count<1){
+            getBalloon("click to hide or view shape", AddOnMap.this)
+                    .setArrowOrientation(ArrowOrientation.TOP)
+                    .setDismissWhenClicked(true)
+                    .build().showAlignTop(infoTV);
+            count=1;
+        }
         for(LatLng latLng:polyLineList){
             polygonOptions.add(latLng);
         }
@@ -1004,6 +1309,9 @@ public class AddOnMap extends FragmentActivity implements
             areaPolygon.remove();
         }
         areaPolygon = mMap.addPolygon(polygonOptions);
+        if(!showPolgon){
+            areaPolygon.setVisible(false);
+        }
         showAreaToUser(SphericalUtil.computeArea(polyLineList));
         stylePolygon(areaPolygon);
     }
@@ -1134,20 +1442,19 @@ public class AddOnMap extends FragmentActivity implements
         imagesAdapter.notifyDataSetChanged();
 
     }
-    public String getDayMonthYear()
+    public static  String getDayMonthYear()
     {
 
-        String dt =new SimpleDateFormat("dd-MM-yyyy-hh-mm").format(new Date());
+        String dt =new SimpleDateFormat("dd-MM-yyyy").format(new Date());
         String dateParts[] = dt.split("-");
 
         int day = Integer.parseInt(dateParts[0]);
         String month = getMonthName(Integer.parseInt(dateParts[1]));
         String year = dateParts[2];
-        String hour = dateParts[3];
-        String minuts = dateParts[4];
-        return day+" "+month+" "+year+", "+hour+":"+minuts;
+
+        return day+" "+month+" "+year;
     }
-    public String getMonthName(int month){
+    public static String getMonthName(int month){
         String monthString;
         switch (month) {
             case 1:  monthString = "Jan";       break;
@@ -1169,15 +1476,31 @@ public class AddOnMap extends FragmentActivity implements
 
     boolean viewData=false;
     public void ViewData(View view) {
-        if(viewData){
-            viewData=false;
-            clearAll();
-            fabViewData.setImageDrawable(getResources().getDrawable(R.drawable.eye_off));
-        }else{
-            viewData=true;
-            fabViewData.setImageDrawable(getResources().getDrawable(R.drawable.eye_on));
-        }
+        if(!fabViewDataBulloonShowed) {
+            getBalloon("enable view mode", AddOnMap.this)
+                    .setArrowOrientation(ArrowOrientation.RIGHT)
+                    .setOnBalloonClickListener(new OnBalloonClickListener() {
+                        @Override
+                        public void onBalloonClick(@NotNull View view) {
+                            fabViewDataBulloonShowed=true;
+                            ViewData(null);
+                            Log.e(TAG,"BaloonCLicked");
 
+                        }
+                    }).build().showAlignLeft(fabViewData);
+        }else {
+            YoYo.with(Techniques.Shake).duration(1000).playOn(addLayout);
+
+
+            if (viewData) {
+                viewData = false;
+                clearAll();
+                fabViewData.setImageDrawable(getResources().getDrawable(R.drawable.eye_off));
+            } else {
+                viewData = true;
+                fabViewData.setImageDrawable(getResources().getDrawable(R.drawable.eye_on));
+            }
+        }
     }
 
     @Override
@@ -1205,9 +1528,10 @@ public class AddOnMap extends FragmentActivity implements
                     break;
                 }
             }
-        }else if(task.equals(TASK_POLYLINE)){
-
-
+        }else if(task.equals(TASK_ROUTE)){
+            Toast.makeText(this, "OnMArker", Toast.LENGTH_SHORT).show();
+        }else if(task.equals(TASK_AREA)){
+            Toast.makeText(this, "onmarkerTASK_AREA", Toast.LENGTH_SHORT).show();
         }
 
 
@@ -1247,7 +1571,7 @@ private void requestNewLocationData(boolean b) {
 
             LatLng latLng=new LatLng(location.getLatitude(),location.getLongitude());
 
-            if(task.equals(TASK_POLYLINE)){
+            if(task.equals(TASK_ROUTE)){
                 addMarker(latLng, placeName, "");
                 polyLineList.add(latLng);
                 showLengthToUser(polyLineList);
@@ -1273,6 +1597,237 @@ private void requestNewLocationData(boolean b) {
             requestNewLocationData(true);
             started=true;
             fabPlayPause.setImageDrawable(getResources().getDrawable(R.drawable.pause));
+        }
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+        ViewData(null);
+        if(v.equals(fabAddPlace)){
+            clearAll();
+            getUploadedLocations(true);
+        }else if(v.equals(fabAddRoute)){
+            clearAll();
+            getUploadedRoutes(true,true);
+        }else{
+            clearAll();
+            getUploadedRoutes(false,true);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull @NotNull MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.add_crop:
+                if(areaModelList.size()==0){
+                    Toast.makeText(this, "add Some fileds First", Toast.LENGTH_SHORT).show();
+                    addArea(null);
+                    break;
+                }
+                startActivity(new Intent(AddOnMap.this,CropsActivity.class));
+                break;
+            case R.id.view_crop:
+                if(cropList.size()==0){
+                    Toast.makeText(this, "No Crops Were Added For Current Season!", Toast.LENGTH_SHORT).show();
+                }else {
+                    setBottomSheet();
+                }
+                break;
+            case R.id.view_area:  fabViewDataBulloonShowed=true;
+                                  viewData = false;
+                                  ViewData(null);
+                                  fabAddArea.callOnClick();
+
+            break;
+            case R.id.view_places:  fabViewDataBulloonShowed=true;
+                viewData = false;
+                ViewData(null);
+                fabAddPlace.callOnClick();
+
+                break;
+            case R.id.view_routes:  fabViewDataBulloonShowed=true;
+                viewData = false;
+                ViewData(null);
+                fabAddRoute.callOnClick();
+
+                break;
+            case R.id.add_area:    fabViewDataBulloonShowed=true;
+                                  viewData = true;
+                                ViewData(null);
+                                fabAddArea.callOnClick();
+                                break;
+            case R.id.add_places:    fabViewDataBulloonShowed=true;
+                viewData = true;
+                ViewData(null);
+                fabAddPlace.callOnClick();
+                break;
+            case R.id.add_routes:    fabViewDataBulloonShowed=true;
+                viewData = true;
+                ViewData(null);
+                fabAddRoute.callOnClick();
+                break;
+            case R.id.add_work:
+                Intent intent=new Intent(this,ViewListActivity.class);
+                intent.putExtra("query","work");
+                startActivity(intent);
+
+                break;
+
+        }
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
+    private FloatingActionButton fabMoreLess;
+    private RecyclerView fieldsRv;
+    private  LinearLayout layoutBottomSheet;
+    private BottomSheetBehavior sheetBehavior;
+    private void setBottomSheet() {
+        kharifScrollView.setVisibility(View.VISIBLE);
+
+        setUpReferences();
+
+
+        sheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+                switch (newState) {
+                    case BottomSheetBehavior.STATE_HIDDEN:
+                        break;
+                    case BottomSheetBehavior.STATE_EXPANDED: {
+                        fabMoreLess.setImageResource(R.drawable.more);
+                    }
+                    break;
+                    case BottomSheetBehavior.STATE_COLLAPSED: {
+                        fabMoreLess.setImageResource(R.drawable.less);
+                    }
+                    break;
+                    case BottomSheetBehavior.STATE_DRAGGING:
+                    case BottomSheetBehavior.STATE_SETTLING:
+                        sheetBehavior.setHideable(false);
+                        break;
+                }
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+
+            }
+        });
+    }
+
+    private void setUpReferences() {
+         layoutBottomSheet = findViewById(R.id.bottom_sheet);
+        fabMoreLess=findViewById(R.id.fabMoreLess);
+        fieldsRv=findViewById(R.id.fieldRV);
+        sheetBehavior = BottomSheetBehavior.from(layoutBottomSheet);
+    }
+
+    List<CropModel> currentViewCropList=new ArrayList<>();
+    public void searchForCropInList(String crop){
+        currentViewCropList.clear();
+        boolean gotCrop=false;
+        for(CropModel model:cropList){
+            if(model.getCropName().contains(crop)){
+                gotCrop=true;
+                currentViewCropList.add(model);
+                setCropsPolygon(model);
+                break;
+            }
+        }
+        if(gotCrop){
+            layoutBottomSheet.setVisibility(View.VISIBLE);
+        showCropDetailsOnBottomSheet();
+        }else{
+            layoutBottomSheet.setVisibility(View.GONE);
+            Toast.makeText(this, "No Crop Uploaded", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    ViewCropsAdapter viewCropsAdapter;
+    private void showCropDetailsOnBottomSheet() {
+        viewCropsAdapter=new ViewCropsAdapter(AddOnMap.this,currentViewCropList);
+        fieldsRv.setAdapter(viewCropsAdapter);
+    }
+
+    private void setCropsPolygon(CropModel model) {
+        mMap.clear();
+        List<LatLng> list=PolyUtil.decode(model.getLatlngList());
+        MarkerOptions markerOptions=new MarkerOptions();
+        if(list==null){
+            Toast.makeText(this, "Error try later!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        markerOptions.position(list.get(0));
+        markerOptions.title(model.getFieldName());
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+        mMap.addMarker(markerOptions);
+        showPolygon(list);
+    }
+
+    @Override
+    public void onCheckedChanged(ChipGroup group, int checkedId) {
+        Chip chip=group.findViewById(checkedId);
+        if(group==kharifChips){
+
+            if (chip != null) {
+                String cropType = chip.getText().toString();
+                searchForCropInList(cropType);
+//                switch (cropType){
+//                    case "Soybean": searchForCropInList(cropType);
+//                        break;
+//                    case "Sesame": searchForCropInList(cropType);
+//                        break;
+//                    case "Mung bean": searchForCropInList(cropType);
+//                        break;
+//                    case "Guar": searchForCropInList(cropType);
+//                        break;
+//                    case "Arhar": searchForCropInList(cropType);
+//                        break;
+//                    case "Groundnut": searchForCropInList(cropType);
+//                        break;
+//                    case "Green gram": searchForCropInList(cropType);
+//                        break;
+//                        default:
+//                }
+
+
+
+
+            }
+            else{
+                layoutBottomSheet.setVisibility(View.GONE);
+
+            }
+
+        }
+    }
+
+    public void viewBottomSheet(View view) {
+        if (sheetBehavior.getState() != BottomSheetBehavior.STATE_EXPANDED) {
+            sheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            fabMoreLess.setImageResource(R.drawable.more);
+        }else{
+            sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+            fabMoreLess.setImageResource(R.drawable.less);
+        }
+    }
+
+    public void refresh(View view) {
+        startActivity(new Intent(this,AddOnMap.class));
+        finish();
+    }
+
+    boolean showPolgon=false;
+    public void showPolygon(View view) {
+        if(areaPolygon!=null){
+            if(areaPolygon.isVisible()){
+                areaPolygon.setVisible(false);
+                showPolgon=false;
+            }else{
+                areaPolygon.setVisible(true);
+                showPolgon=true;
+            }
         }
     }
 }

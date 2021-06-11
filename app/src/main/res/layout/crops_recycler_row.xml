@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+        android:id="@+id/base_cardview"
+        style="@style/Base.CardView"
+       xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+        app:cardCornerRadius="10dp"
+        android:layout_margin="10dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+       >
+
+        <!--This is a ConstraintLayout for the entire CardView
+                   including the expandable portion-->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/dark_grey"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/base_cardview"
+
+          >
+
+            <!--This is a ConstraintLayout for the fixed portion
+                of the CardView. The elements
+                that lie within the fixed portion of the CardView
+                can be constrained to this layout.-->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/fixed_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+              >
+                <TextView
+                    android:id="@+id/fieldNameTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    app:layout_constraintTop_toTopOf="@id/fixed_layout"
+                    app:layout_constraintBottom_toBottomOf="@id/fixed_layout"
+                    app:layout_constraintStart_toStartOf="@id/fixed_layout"
+                    android:textSize="22sp"
+                    />
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fabMoreButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:fabSize="mini"
+                    android:src="@drawable/more"
+                    android:backgroundTint="@color/white"
+                    android:elevation="0dp"
+                    app:elevation="0dp"
+                    app:borderWidth="0dp"
+                    app:layout_constraintEnd_toEndOf="@id/fixed_layout"
+                    app:layout_constraintTop_toTopOf="@id/fixed_layout"
+                    app:layout_constraintBottom_toBottomOf="@id/fixed_layout"
+                    />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!--The following is the expandable portion whose
+                visibility is initially set to 'gone'.
+                The parent LinearLayout contains 3 child LinearLayouts
+                that hold a subject name and an icon each.-->
+            <LinearLayout
+                android:id="@+id/hidden_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/fixed_layout">
+
+                <!--Child LinearLayout 1-->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="5dp"
+                    android:tooltipText="Uploaded Details"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/uploadDateTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginStart="40dp"
+                        android:textColor="@color/white"
+                        android:textSize="16dp" />
+                    <TextView
+                        android:id="@+id/fieldAreaTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_marginEnd="40dp"
+
+                        android:textColor="@color/white"
+                        android:textSize="16dp" />
+                </RelativeLayout>
+
+                <!--Child LinearLayout 2-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/border"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginStart="20dp"
+                        android:textStyle="bold"
+                        android:text="• Crop Type👇"
+                        android:textColor="@color/white"
+                        android:textSize="16dp" />
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/crop_type_group"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:singleSelection="true"
+                        android:tooltipText="Select Crop type"
+                        app:chipSpacingHorizontal="5dp"
+                        app:chipSpacingVertical="5dp"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginEnd="20dp"
+                        android:layout_marginStart="40dp"
+                        app:chipSpacing="25dp">
+
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:text="Soybean" />
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:text="Sesame" />
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:layout_height="wrap_content"
+                            android:text="Mung bean" />
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:layout_height="wrap_content"
+                            android:text="Guar" />
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:text="Arhar " />
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:layout_height="wrap_content"
+                            android:text="Groundnut" />
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:layout_height="wrap_content"
+                            android:text="Green gram " />
+
+                        <com.google.android.material.chip.Chip
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checkable="true"
+                            android:textColor="@color/white"
+                            android:clickable="true"
+                            android:focusable="true"
+                            app:chipBackgroundColor="@color/values"
+                            android:text="Black gram" />
+
+
+
+                    </com.google.android.material.chip.ChipGroup>
+                    <EditText
+                        android:id="@+id/cropSpecificationET"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@null"
+                        android:inputType="text"
+                        android:imeOptions="actionNone"
+                        android:textColor="@color/white"
+                        android:layout_marginTop="5dp"
+                        android:gravity="center"
+                        android:hint="seed type or something else to note...)"
+                        android:textColorHint="@color/white"
+                        />
+
+                </LinearLayout>
+
+                <!--Child LinearLayout 3-->
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/border"
+                    android:orientation="horizontal">
+                    <TextView
+
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="• Planting Date👉"
+                        android:gravity="center"
+                        android:layout_alignBottom="@id/fabAddDate"
+                        android:layout_alignParentStart="true"
+                        android:layout_alignParentTop="true"
+                        android:textColor="@color/white"
+                        android:layout_marginStart="20dp"
+                        android:textSize="16dp"
+                        />
+                    <TextView
+                        android:id="@+id/dateTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignBottom="@id/fabAddDate"
+                        android:layout_alignParentTop="true"
+                        android:gravity="center"
+                        android:layout_toStartOf="@id/fabAddDate"
+                        android:layout_marginEnd="3dp"
+                        android:textColor="@color/white"
+                        android:textSize="14dp" />
+                     <com.google.android.material.floatingactionbutton.FloatingActionButton
+                         android:id="@+id/fabAddDate"
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         app:fabCustomSize="@dimen/custom_fab_size"
+                         android:layout_alignParentEnd="true"
+                         android:backgroundTint="@color/white"
+                         android:src="@drawable/add"
+                         android:layout_marginEnd="40dp"
+                         app:elevation="0dp"
+                         android:elevation="0dp"
+                         app:borderWidth="0dp"
+                         />
+                    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                        android:id="@+id/fabUpload"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/white"
+                        android:textAllCaps="false"
+                        android:visibility="gone"
+                        android:layout_centerInParent="true"
+                        android:layout_below="@id/fabAddDate"
+                        android:text="Upload"
+                        app:icon="@drawable/upload"
+                        android:elevation="0dp"
+                        app:elevation="0dp"
+                        />
+
+                    <RadioButton
+                        android:id="@+id/chipRadioButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:text="RadioButton" />
+                    <RadioButton
+                        android:id="@+id/dateRadioButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:text="RadioButton" />
+                </RelativeLayout>
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+

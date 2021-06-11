@@ -19,6 +19,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -42,6 +43,7 @@ public class SignInActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
+
         sharedpreferences = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
         progressBar=new ProgressBar(SignInActivity.this,"connecting...");
         mfirebaseAuth=FirebaseAuth.getInstance();
@@ -168,7 +170,7 @@ public class SignInActivity extends AppCompatActivity {
         GoogleSignInAccount account=GoogleSignIn.getLastSignedInAccount(getApplicationContext());
         if(account!=null){
             progressBar.hide();
-            Intent intent=new Intent(SignInActivity.this, DrawerActivity.class);
+            Intent intent=new Intent(SignInActivity.this,MapsActivity.class);
             startActivity(intent);
             finish();
 

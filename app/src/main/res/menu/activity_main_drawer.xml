@@ -3,45 +3,63 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:showIn="navigation_view">
-    <group android:checkableBehavior= "single">
+    <group android:checkableBehavior="all">
+    <item android:title= "Map Type" >
+        <menu>
+    <group  android:checkableBehavior="single" >
         <item
-            android:id= "@+id/nav_camera"
+            android:id= "@+id/normal_map"
             android:icon= "@drawable/map"
-            android:title= "Import" />
+            android:title= "Normal" />
         <item
-            android:id= "@+id/nav_gallery"
-            android:icon= "@drawable/add_image_icon"
-            android:title= "Gallery" />
+            android:id= "@+id/satellite_map"
+            android:icon= "@drawable/satellite"
+            android:title= "Satellite" />
         <item
-            android:id= "@+id/nav_slideshow"
-            android:icon= "@drawable/add_image_icon"
-            android:title= "Slideshow" />
-        <item
-            android:id= "@+id/nav_manage"
-            android:icon= "@drawable/add"
-            android:title= "Tools" />
+            android:id= "@+id/dark_map"
+            android:icon= "@drawable/dark"
+            android:title= "Dark" />
+
     </group>
+        </menu>
+    </item>
+    <item android:title= "Calculate" >
+        <menu>
+
+            <item
+                android:id= "@+id/calculate_area"
+                android:checkable="false"
+                android:icon= "@drawable/add_area"
+                android:title= "Area" />
+            <item
+                android:id= "@+id/calculate_length"
+                android:checkable="false"
+                android:icon= "@drawable/addroute"
+                android:title= "Length"
+                />
+        </menu>
+    </item>
     <item android:title= "Share" >
         <menu>
+
             <item
                 android:id= "@+id/app_share"
                 android:icon= "@drawable/link"
-                android:checkable="true"
                 android:title= "App" />
             <item
                 android:id= "@+id/location_share"
                 android:icon= "@drawable/place"
-                android:checkable="true"
                 android:title= "Location"
                 />
             <item
                 android:title="Real Time Location"
                 android:id="@+id/share_rtl_switch"
-
+                android:icon="@drawable/location_on"
                 app:actionViewClass="android.widget.Switch"
-                android:checkable="true" />
+ />
 
 
         </menu>
     </item>
+    </group>
 </menu>

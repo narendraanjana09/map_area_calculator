@@ -3,6 +3,7 @@ package com.nsa.mapsspeech.Model;
 import java.util.ArrayList;
 
 public class PlaceModel {
+    String key;
     String lat;
     String lng;
     String placeName;
@@ -13,12 +14,21 @@ public class PlaceModel {
     public PlaceModel() {
     }
 
-    public PlaceModel(String lat, String lng, String placeName, String date, ArrayList<String> imageUriList) {
+    public PlaceModel(String key, String lat, String lng, String placeName, String date, ArrayList<String> imageUriList) {
+        this.key = key;
         this.lat = lat;
         this.lng = lng;
         this.placeName = placeName;
         this.date = date;
         this.imageUriList = imageUriList;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
     }
 
     public String getLat() {

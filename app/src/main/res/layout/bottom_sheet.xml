@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/bottom_sheet"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:visibility="gone"
+    android:background="@color/white"
+    tools:context=".Activities.AddOnMap"
+    android:orientation="horizontal"
+    app:behavior_hideable="true"
+    app:behavior_peekHeight="60dp"
+    app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/fieldRV"
+        android:layout_width="match_parent"
+        android:layout_below="@id/fabMoreLess"
+        android:maxHeight="400dp"
+
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        android:layout_height="wrap_content"/>
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+             android:id="@+id/fabMoreLess"
+            android:layout_centerInParent="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:onClick="viewBottomSheet"
+            android:src="@drawable/less"
+            android:backgroundTint="@color/white"
+            app:elevation="0dp"
+            android:elevation="0dp"
+            app:borderWidth="0dp"
+            />
+    </RelativeLayout>
+
+</LinearLayout>
