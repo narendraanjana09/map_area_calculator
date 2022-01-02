@@ -5,6 +5,5 @@ save your locations, routes and areas.
 You can also share the same.
 A Farmer section included saving their current crop in a particular field.
 
-play Store link:- https://play.google.com/store/apps/details?id=com.nsa.mapsspeech
 
 
